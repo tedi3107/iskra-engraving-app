@@ -21,6 +21,7 @@ export default function App() {
         <s-link href="/app">Home</s-link>
         <s-link href="/app/position-designer">Position designer</s-link>
         <s-link href="/app/font-settings">Font settings</s-link>
+        <s-link href="/app/setup-cart-transform">Setup cart transform</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>
