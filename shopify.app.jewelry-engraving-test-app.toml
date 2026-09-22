@@ -1,0 +1,23 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+client_id = "12e1a234e8febd1c03b7f262dbb9920e"
+name = "Jewelry-Engraving-test-app"
+application_url = "https://localhost:3458/app"
+embedded = true
+
+[webhooks]
+api_version = "2026-10"
+
+[access_scopes]
+scopes = "write_products,write_files,write_cart_transforms,read_files"
+
+[auth]
+redirect_urls = [ "https://localhost:3458/api/auth" ]
+
+[app_proxy]
+url = "https://localhost:3458/apps/engraving"
+subpath = "engraving"
+prefix = "apps"
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true

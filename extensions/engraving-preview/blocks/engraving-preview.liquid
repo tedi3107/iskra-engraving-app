@@ -1,0 +1,1078 @@
+{% liquid
+assign shop_fonts = shop.metafields.engraving.fonts.value
+assign zone = block.settings.product.metafields.engraving.zone.value
+assign img = block.settings.product.featured_image
+%}
+
+{% if zone and img %}
+<style>
+  {
+    % if shop_fonts.fontOne %
+  }
+
+  @font-face {
+    font-family: "{{ shop_fonts.fontOne.familyName }}";
+    src: url("{{ shop_fonts.fontOne.url }}");
+    font-display: swap;
+  }
+
+    {
+    % endif %
+  }
+
+    {
+    % if shop_fonts.fontTwo %
+  }
+
+  @font-face {
+    font-family: "{{ shop_fonts.fontTwo.familyName }}";
+    src: url("{{ shop_fonts.fontTwo.url }}");
+    font-display: swap;
+  }
+
+    {
+    % endif %
+  }
+</style>
+
+<div class="engraving-preview" {{ block.shopify_attributes }}>
+  <button type="button" class="engraving-preview__trigger" id="EngravingTrigger-{{ block.id }}">
+    <svg class="engraving-preview__trigger-icon" viewBox="0 0 810 817.92" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="a">
+          <path d="M64.086 61.469H745.77V748H64.086Zm0 0"></path>
+        </clipPath>
+        <clipPath id="b">
+          <path d="M87.41 451.563h61.492v98.988H87.41Zm0 0"></path>
+        </clipPath>
+        <clipPath id="c">
+          <path d="M149 421.457h30.707v49.496H149Zm0 0"></path>
+        </clipPath>
+        <clipPath id="d">
+          <path d="M179.734 531.3h30.746v49.497h-30.746Zm0 0"></path>
+        </clipPath>
+        <clipPath id="e">
+          <path d="M651.492 493.098h61.496v98.988h-61.496Zm0 0"></path>
+        </clipPath>
+        <clipPath id="g">
+          <path d="M.54.098h61.448v98.988H.54Zm0 0"></path>
+        </clipPath>
+        <clipPath id="f">
+          <path d="M0 0h62v100H0z"></path>
+        </clipPath>
+        <clipPath id="h">
+          <path d="M632.703 404.96h30.746v49.497h-30.746Zm0 0"></path>
+        </clipPath>
+        <clipPath id="j">
+          <path d="M.727 1h30.722v49.457H.727Zm0 0"></path>
+        </clipPath>
+        <clipPath id="i">
+          <path d="M0 0h32v51H0z"></path>
+        </clipPath>
+        <clipPath id="k">
+          <path d="M601.93 476.379h30.746v49.496H601.93Zm0 0"></path>
+        </clipPath>
+        <clipPath id="m">
+          <path d="M1 .379h30.676v49.496H1Zm0 0"></path>
+        </clipPath>
+        <clipPath id="l">
+          <path d="M0 0h32v50H0z"></path>
+        </clipPath>
+      </defs>
+      <g clip-path="url(#a)">
+        <path fill="currentColor" fill-rule="evenodd"
+          d="M414.61 435.863v202.551l41.726-66.488c2.793-4.442 8.664-5.774 13.105-2.98 4.438 2.792 5.77 8.663 2.977 13.1l-46.797 74.567 129.387-31.894c5.097-1.254 10.25 1.86 11.504 6.957s-1.864 10.25-6.961 11.504l-76.098 18.761h253.024c5.265 0 9.53 4.27 9.53 9.532v66.906c0 5.262-4.265 9.527-9.53 9.527H73.684c-5.262 0-9.532-4.265-9.532-9.527v-66.906c0-5.262 4.27-9.532 9.532-9.532h253.05l-76.12-18.761c-5.094-1.254-8.212-6.407-6.958-11.504 1.254-5.098 6.406-8.211 11.504-6.957l129.38 31.894-46.794-74.566c-2.789-4.438-1.46-10.309 2.98-13.102 4.442-2.793 10.313-1.46 13.102 2.98l41.723 66.485V435.863h-6.793v-.043a9.48 9.48 0 0 1-8.227-4.761l-48.484-83.977a33.48 33.48 0 0 1-16.676-9.086c-6.058-6.062-9.82-14.43-9.82-23.637s3.762-17.574 9.82-23.632c6.055-6.055 14.426-9.82 23.633-9.82h.898v-68.09h-24.824c-5.262 0-9.527-4.27-9.527-9.532V71.375a9.527 9.527 0 0 1 9.527-9.527h180.008c5.262 0 9.531 4.265 9.531 9.527v131.91c0 5.262-4.27 9.531-9.531 9.531h-24.82v68.09h.894c9.207 0 17.578 3.766 23.633 9.82 6.059 6.06 9.824 14.426 9.824 23.633s-3.765 17.575-9.824 23.637c-4.484 4.484-10.242 7.715-16.672 9.086l-31.23 54.129-16.922 29.305a9.53 9.53 0 0 1-8.563 5.347Zm185.468 197.422 29.336-7.164c5.094-1.23 8.23-6.371 7-11.465-1.234-5.097-6.371-8.23-11.469-7l-29.336 7.164c-5.097 1.23-8.23 6.371-7 11.465 1.235 5.098 6.371 8.23 11.47 7M83.211 681v47.848h643.738V681zM415.93 416.805l39.851-68.992H354.38l39.832 68.992Zm-76.926-88.051h132.34c3.879-.05 7.41-1.664 9.976-4.23 2.614-2.614 4.239-6.215 4.239-10.165s-1.625-7.546-4.239-10.16c-2.61-2.61-6.21-4.234-10.16-4.234H339.004c-3.95 0-7.55 1.625-10.16 4.234-2.614 2.613-4.235 6.211-4.235 10.16 0 3.95 1.621 7.551 4.235 10.164 2.566 2.567 6.097 4.18 9.976 4.23Zm19.957-47.848h92.242v-68.09h-92.242Zm-34.352-87.148h160.95V80.906h-160.95Zm165.02 431.387 92.465-66.598c4.25-3.063 5.218-8.996 2.156-13.25-3.059-4.254-8.996-5.223-13.25-2.164l-92.46 66.597c-4.259 3.063-5.224 8.997-2.165 13.254 3.063 4.254 8.996 5.22 13.254 2.16m-275.07-10.325-29.336-7.164c-5.098-1.23-10.235 1.903-11.47 7-1.23 5.094 1.903 10.235 7 11.465l29.337 7.164c5.097 1.23 10.234-1.902 11.465-7 1.234-5.094-1.903-10.234-6.996-11.465m117.07-5.09-92.465-66.597c-4.25-3.059-10.187-2.09-13.25 2.164-3.059 4.254-2.094 10.187 2.16 13.25l92.465 66.598c4.254 3.058 10.191 2.093 13.254-2.16 3.059-4.258 2.09-10.192-2.164-13.255m0 0">
+        </path>
+      </g>
+      <g clip-path="url(#b)">
+        <path fill="currentColor"
+          d="M116.691 452.875c-9.113 31.895-23.308 43.898-28.3 47.313-.79.527-.79 1.578 0 2.105 4.906 3.328 19.097 15.418 28.3 47.312.348 1.227 2.102 1.227 2.454 0 8.933-31.894 23.656-43.898 28.824-47.312a1.31 1.31 0 0 0 0-2.191c-5.168-3.329-19.89-15.422-28.824-47.313-.352-1.226-2.106-1.226-2.454.086m0 0">
+        </path>
+      </g>
+      <g clip-path="url(#c)">
+        <path fill="currentColor"
+          d="M163.598 422.117c-4.555 15.945-11.653 21.945-14.149 23.656a.614.614 0 0 0 0 1.051c2.453 1.664 9.551 7.711 14.149 23.656.175.614 1.054.614 1.226 0 4.469-15.945 11.828-21.949 14.414-23.656a.657.657 0 0 0 0-1.097c-2.586-1.664-9.945-7.707-14.414-23.657-.172-.613-1.05-.613-1.226.047m0 0">
+        </path>
+      </g>
+      <g clip-path="url(#d)">
+        <path fill="currentColor"
+          d="M194.375 531.957c-4.559 15.945-11.652 21.95-14.152 23.656a.614.614 0 0 0 0 1.051c2.453 1.668 9.55 7.711 14.152 23.66.176.614 1.05.614 1.227 0 4.468-15.949 11.828-21.949 14.414-23.66a.657.657 0 0 0 0-1.094c-2.586-1.664-9.946-7.71-14.414-23.656-.176-.613-1.051-.613-1.227.043m0 0">
+        </path>
+      </g>
+      <g clip-path="url(#e)">
+        <g clip-path="url(#f)" transform="translate(651 493)">
+          <g clip-path="url(#g)">
+            <path fill="currentColor"
+              d="M32.754 1.41c9.113 31.895 23.305 43.899 28.3 47.313.79.527.79 1.578 0 2.105-4.906 3.328-19.1 15.418-28.3 47.313-.352 1.226-2.106 1.226-2.453 0C21.363 66.246 6.645 54.246 1.473 50.828a1.31 1.31 0 0 1 0-2.191C6.645 45.309 21.363 33.215 30.3 1.324c.347-1.226 2.101-1.226 2.453.086m0 0">
+            </path>
+          </g>
+        </g>
+      </g>
+      <g clip-path="url(#h)">
+        <g clip-path="url(#i)" transform="translate(632 404)">
+          <g clip-path="url(#j)">
+            <path fill="#142a43"
+              d="M16.832 1.617c4.559 15.946 11.656 21.95 14.152 23.656.395.266.395.79 0 1.051-2.453 1.668-9.55 7.711-14.152 23.66-.172.614-1.05.614-1.227 0-4.464-15.949-11.828-21.949-14.41-23.66a.653.653 0 0 1 0-1.094c2.582-1.664 9.946-7.71 14.41-23.656.176-.613 1.055-.613 1.227.043m0 0">
+            </path>
+          </g>
+        </g>
+      </g>
+      <g clip-path="url(#k)">
+        <g clip-path="url(#l)" transform="translate(601 476)">
+          <g clip-path="url(#m)">
+            <path fill="#142a43"
+              d="M17.059 1.035c4.554 15.95 11.652 21.95 14.152 23.656.394.266.394.79 0 1.055-2.453 1.664-9.55 7.707-14.152 23.656-.176.614-1.051.614-1.227 0C11.363 33.453 4.004 27.453 1.418 25.746a.657.657 0 0 1 0-1.098c2.586-1.664 9.945-7.71 14.414-23.656.176-.613 1.05-.613 1.227.043m0 0">
+            </path>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <span id="EngravingTriggerLabel-{{ block.id }}">{{ block.settings.button_label }}</span>
+  </button>
+
+  <dialog class="engraving-preview__dialog" id="EngravingDialog-{{ block.id }}">
+    <div class="engraving-preview__dialog-header">
+      <span>{{ block.settings.label }}</span>
+      <button type="button" class="engraving-preview__close" id="EngravingClose-{{ block.id }}"
+        aria-label="Close">&times;</button>
+    </div>
+
+    <div class="engraving-preview__stage" id="EngravingStage-{{ block.id }}" data-shape="{{ zone.shape }}"
+      data-font-choice="{{ zone.fontChoice }}" data-font-one-family="{{ shop_fonts.fontOne.familyName }}"
+      data-font-one-fallback="{{ shop_fonts.fontOne.fallback }}"
+      data-font-two-family="{{ shop_fonts.fontTwo.familyName }}"
+      data-font-two-fallback="{{ shop_fonts.fontTwo.fallback }}" data-one-font-size="{{ zone.fontOne.fontSize }}"
+      data-one-x="{{ zone.fontOne.x }}" data-one-y="{{ zone.fontOne.y }}" data-one-width="{{ zone.fontOne.width }}"
+      data-one-height="{{ zone.fontOne.height }}" data-one-center-x="{{ zone.fontOne.centerX }}"
+      data-one-center-y="{{ zone.fontOne.centerY }}" data-one-radius="{{ zone.fontOne.radius }}"
+      data-one-start-angle="{{ zone.fontOne.startAngle }}" data-one-arc-length="{{ zone.fontOne.arcLength }}"
+      data-two-font-size="{{ zone.fontTwo.fontSize }}" data-two-x="{{ zone.fontTwo.x }}"
+      data-two-y="{{ zone.fontTwo.y }}" data-two-width="{{ zone.fontTwo.width }}"
+      data-two-height="{{ zone.fontTwo.height }}" data-two-center-x="{{ zone.fontTwo.centerX }}"
+      data-two-center-y="{{ zone.fontTwo.centerY }}" data-two-radius="{{ zone.fontTwo.radius }}"
+      data-two-start-angle="{{ zone.fontTwo.startAngle }}" data-two-arc-length="{{ zone.fontTwo.arcLength }}">
+      <img class="engraving-preview__image" src="{{ img | image_url: width: 800 }}" alt="{{ img.alt | escape }}"
+        width="{{ img.width }}" height="{{ img.height }}" loading="lazy">
+
+      <canvas class="engraving-preview__canvas" id="EngravingCanvas-{{ block.id }}"></canvas>
+    </div>
+
+    <span class="engraving-preview__label">{{ block.settings.label }}</span>
+    <input type="text" id="EngravingInput-{{ block.id }}" class="engraving-preview__input" name="properties[Engraving]"
+      maxlength="{{ zone.maxLength }}" placeholder="{{ block.settings.placeholder }}"
+      aria-label="{{ block.settings.label }}" autocomplete="off">
+
+    {% if shop_fonts.fontOne or shop_fonts.fontTwo %}
+    <span class="engraving-preview__label">Letter Type</span>
+    <div class="engraving-preview__font-picker" id="EngravingFontPicker-{{ block.id }}">
+      {% if shop_fonts.fontOne %}
+      <label class="engraving-preview__font-option">
+        <input type="radio" name="engraving-font-{{ block.id }}" value="one" {% if zone.fontChoice=='one' %}checked{%
+          endif %}>
+        <span style="font-family:'{{ shop_fonts.fontOne.familyName }}', {{ shop_fonts.fontOne.fallback }};">A</span>
+      </label>
+      {% endif %}
+      {% if shop_fonts.fontTwo %}
+      <label class="engraving-preview__font-option">
+        <input type="radio" name="engraving-font-{{ block.id }}" value="two" {% if zone.fontChoice=='two' %}checked{%
+          endif %}>
+        <span style="font-family:'{{ shop_fonts.fontTwo.familyName }}', {{ shop_fonts.fontTwo.fallback }};">A</span>
+      </label>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <button type="button" class="engraving-preview__confirm" id="EngravingConfirm-{{ block.id }}">
+      {{ block.settings.confirm_label }}
+    </button>
+  </dialog>
+</div>
+
+<style>
+  .engraving-preview {
+    --engrave-navy: #16233d;
+    --engrave-navy-dark: #0e1729;
+    --engrave-cream: #faf3ec;
+    --engrave-border: #d9cfc2;
+  }
+
+  .engraving-preview__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6em;
+    padding: 0 1.5em;
+    min-height: 3.5em;
+    border: 1.5px solid var(--engrave-navy);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--engrave-navy);
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    width: 100%;
+    max-width: 44rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .engraving-preview__trigger-icon {
+    width: 2em;
+    height: 2em;
+    flex-shrink: 0;
+  }
+
+  .engraving-preview__trigger--filled {
+    background: var(--engrave-navy);
+    color: #fff;
+  }
+
+  .engraving-preview__dialog {
+    border: none;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 480px;
+    width: 90vw;
+    background: var(--engrave-cream);
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__dialog::backdrop {
+    background: rgba(22, 35, 61, 0.55);
+  }
+
+  .engraving-preview__dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.2em;
+    font-weight: 600;
+  }
+
+  .engraving-preview__close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.1em 0.4em;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__confirm {
+    display: block;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.9em;
+    background: var(--engrave-navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: background 0.15s ease;
+  }
+
+  .engraving-preview__confirm:hover {
+    background: var(--engrave-navy-dark);
+  }
+
+  .engraving-preview__stage {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .engraving-preview__image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .engraving-preview__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .engraving-preview__label {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__input {
+    display: block;
+    width: 100%;
+    margin-top: 0.4em;
+    padding: 0.75em 0.9em;
+    box-sizing: border-box;
+    font-size: 1em;
+    background: #fff;
+    border: 1.5px solid var(--engrave-border);
+    border-radius: 8px;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__input:focus {
+    outline: none;
+    border-color: var(--engrave-navy);
+  }
+
+  .engraving-preview__font-picker {
+    display: flex;
+    gap: 0.6em;
+    margin-top: 0.5em;
+  }
+
+  .engraving-preview__font-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 0.4em;
+    border: 1.5px solid var(--engrave-border);
+    border-radius: 999px;
+    padding: 0.6em 1em;
+    cursor: pointer;
+    font-size: 1.2em;
+    background: #fff;
+    color: var(--engrave-navy);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .engraving-preview__font-option:has(input:checked) {
+    background: var(--engrave-navy);
+    border-color: var(--engrave-navy);
+    color: #fff;
+  }
+
+  .engraving-preview__font-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  (function () {
+    var input = document.getElementById('EngravingInput-{{ block.id }}');
+
+    // Some themes render more than one /cart/add form on the same page —
+    // a separate one for a sticky mobile bar is common — so picking just
+    // the first one (the old approach) can silently miss whichever form
+    // the customer's actual "Add to cart" button belongs to. Mirroring
+    // into every matching form, keyed by name so repeated calls update
+    // rather than duplicate, means the property reaches the cart no
+    // matter which button was clicked.
+    function mirrorToCartForms(name, value) {
+      var forms = document.querySelectorAll('form[action^="/cart/add"]');
+      forms.forEach(function (form) {
+        if (form.contains(input) && name === 'properties[Engraving]') return;
+        var hidden = form.querySelector('input[name="' + name + '"]');
+        if (!hidden) {
+          hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = name;
+          form.appendChild(hidden);
+        }
+        hidden.value = value;
+      });
+    }
+
+    // Removes a property from every matching form entirely, rather than
+    // just emptying it — used when reopening the dialog to edit, so a
+    // confirmed image from a previous edit can never end up attached
+    // alongside text/font that no longer matches it (say, if "Add to
+    // cart" were somehow reached before the new edit's own upload has
+    // finished). No image is a safe fallback (the product's normal photo
+    // shows instead); a mismatched one isn't.
+    function clearFromCartForms(name) {
+      document.querySelectorAll('form[action^="/cart/add"]').forEach(function (form) {
+        var hidden = form.querySelector('input[name="' + name + '"]');
+        if (hidden) hidden.remove();
+      });
+    }
+    var stage = document.getElementById('EngravingStage-{{ block.id }}');
+    if (!input || !stage) return;
+
+    var shape = stage.getAttribute('data-shape');
+    var imageEl = stage.querySelector('.engraving-preview__image');
+    var currentFontChoice = stage.getAttribute('data-font-choice') || 'one';
+
+    // Font 1 and Font 2 can each have their own position/size/curve (a
+    // wide script and a compact sans often need different boxes to sit
+    // well) — reading every geometry value through this one helper, keyed
+    // by which font is picked right now, is what lets switching the radio
+    // re-run a full layout instead of just changing the typeface.
+    function geomAttr(name) {
+      return parseFloat(stage.getAttribute('data-' + currentFontChoice + '-' + name));
+    }
+
+
+    // Tracks the font currently in use and the color sampled from the
+    // photo, so every render (triggered by typing, switching fonts, or
+    // just resizing) can redraw from this shared state rather than each
+    // caller needing to know font/color separately.
+    var currentFontFamily = null;
+    var currentFontFallback = 'serif';
+    var currentBaseColorHex = '#96731f';
+
+    function currentFontFamilyCss() {
+      return currentFontFamily ? "'" + currentFontFamily + "', " + currentFontFallback : currentFontFallback;
+    }
+
+    // Draws a plain, solid-white silhouette of the current text — no
+    // color or shading of its own — using the zone's real geometry
+    // (straight centering, or real-glyph-width-based per-character
+    // placement around the curve). This is deliberately *not* the final
+    // look: it becomes the height-map input to the WebGL lighting pass
+    // below, which is what actually shades it, so this function's only
+    // job is getting the letterforms in the right place. Shared by the
+    // live preview (redrawn on every keystroke) and the cart snapshot
+    // (drawn once at add-to-cart time) — same positioning math either
+    // way, just at whatever w/h the caller is rendering at.
+    function drawEngravingSilhouette(ctx, w, h) {
+      var text = input.value;
+      if (!text) return;
+      var fontSizePercent = geomAttr('font-size');
+
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (shape === 'straight') {
+        var zx = geomAttr('x');
+        var zy = geomAttr('y');
+        var zw = geomAttr('width');
+        var zh = geomAttr('height');
+        var fontPx = (fontSizePercent / 100) * ((zh / 100) * h);
+        ctx.font = fontPx + 'px ' + currentFontFamilyCss();
+        ctx.fillText(text, ((zx + zw / 2) / 100) * w, ((zy + zh / 2) / 100) * h);
+      } else {
+        var r = (geomAttr('radius') / 100) * w;
+        var fontPx2 = (fontSizePercent / 100) * r;
+        var cx = (geomAttr('center-x') / 100) * w;
+        var cy = (geomAttr('center-y') / 100) * h;
+        var startDeg = geomAttr('start-angle');
+        var arcDeg = geomAttr('arc-length');
+        var midAngle = ((startDeg + arcDeg / 2) % 360 + 360) % 360;
+        var isBottomHalf = midAngle > 0 && midAngle < 180;
+        var chars = Array.from(text);
+        ctx.font = fontPx2 + 'px ' + currentFontFamilyCss();
+
+        // Measures each character's real rendered width, rather than
+        // splitting the configured arc evenly by character count — even
+        // spacing looked fine for short words, but for longer text it
+        // doesn't match how wide the word actually is and can run past
+        // the edge of the band. Converting each character's pixel width
+        // to the angular span it needs at this radius, and centering the
+        // whole word on the zone's own midpoint angle, keeps it
+        // contained regardless of length.
+        var charWidths = chars.map(function (ch) {
+          return ctx.measureText(ch).width;
+        });
+        var totalWidth = charWidths.reduce(function (a, b) {
+          return a + b;
+        }, 0);
+        var totalAngleDeg = (totalWidth / r) * (180 / Math.PI);
+        var directionSign = isBottomHalf ? -1 : 1;
+        var centerAngle = startDeg + arcDeg / 2;
+        var cursorAngle = centerAngle - directionSign * (totalAngleDeg / 2);
+
+        chars.forEach(function (ch, i) {
+          var halfCharAngle = (charWidths[i] / 2 / r) * (180 / Math.PI);
+          var angle = cursorAngle + directionSign * halfCharAngle;
+          var rad = (angle * Math.PI) / 180;
+          var x = cx + r * Math.cos(rad);
+          var y = cy + r * Math.sin(rad);
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(((angle + 90) * Math.PI) / 180);
+          ctx.fillText(ch, 0, 0);
+          ctx.restore();
+          cursorAngle += directionSign * ((charWidths[i] / r) * (180 / Math.PI));
+        });
+      }
+      ctx.restore();
+    }
+
+    // Renders the current text onto whichever canvas is passed in (the
+    // in-dialog preview, the overlay on the main photo, or — later — the
+    // cart snapshot), at that canvas's own size: draw a silhouette at
+    // this size, light it (see renderEngravedLighting, defined below but
+    // usable here since function declarations are hoisted), and
+    // composite the lit result on top. Clearing first means an emptied
+    // input correctly shows nothing rather than the last thing typed.
+    function renderToCanvas(canvasEl, w, h) {
+      if (!canvasEl || !w || !h) return;
+      canvasEl.width = w;
+      canvasEl.height = h;
+      var ctx = canvasEl.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      if (!input.value) return;
+
+      var silhouette = document.createElement('canvas');
+      silhouette.width = w;
+      silhouette.height = h;
+      drawEngravingSilhouette(silhouette.getContext('2d'), w, h);
+
+      var lit = renderEngravedLighting(silhouette, currentBaseColorHex);
+      if (lit) {
+        ctx.drawImage(lit, 0, 0);
+      } else {
+        // WebGL unavailable for some reason — a flat tint of the
+        // silhouette is still readable, just without the carved shading.
+        ctx.drawImage(silhouette, 0, 0);
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.fillStyle = currentBaseColorHex;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    var internalCanvas = document.getElementById('EngravingCanvas-{{ block.id }}');
+
+    function renderInternal() {
+      if (!imageEl) return;
+      renderToCanvas(internalCanvas, imageEl.clientWidth, imageEl.clientHeight);
+    }
+
+    // Optional: the engraving also overlays onto the product's main photo
+    // elsewhere on the page, alongside the app's own preview inside the
+    // dialog — so customers see it live on the page, not just when the
+    // popup is open. Prefer an explicit data-engraving-target if the
+    // merchant added one; otherwise fall back to the first <img> in this
+    // block's own section. Shopify always wraps every section in an
+    // element whose id starts with "shopify-section-", a platform
+    // guarantee rather than a theme-specific detail, so this works the
+    // same regardless of theme.
+    var ownBlock = stage.closest('.engraving-preview');
+    var sectionEl = ownBlock ? ownBlock.closest('[id^="shopify-section-"]') : null;
+    var externalImage = document.querySelector('[data-engraving-target]');
+    if (!externalImage && sectionEl) {
+      var candidates = sectionEl.querySelectorAll('img');
+      for (var i = 0; i < candidates.length; i++) {
+        if (!candidates[i].closest('.engraving-preview')) {
+          externalImage = candidates[i];
+          break;
+        }
+      }
+    }
+
+    var externalCanvas = null;
+    if (externalImage) {
+      externalCanvas = document.createElement('canvas');
+      externalCanvas.className = 'engraving-preview__canvas';
+      externalCanvas.style.position = 'absolute';
+      externalCanvas.style.top = '0';
+      externalCanvas.style.left = '0';
+      externalCanvas.style.width = '100%';
+      externalCanvas.style.height = '100%';
+      externalCanvas.style.pointerEvents = 'none';
+      externalImage.parentNode.appendChild(externalCanvas);
+    }
+
+    function renderExternal() {
+      if (!externalImage || !externalCanvas) return;
+      renderToCanvas(externalCanvas, externalImage.clientWidth, externalImage.clientHeight);
+    }
+
+    function renderAllPreviews() {
+      renderInternal();
+      renderExternal();
+    }
+
+    var fontPicker = document.getElementById('EngravingFontPicker-{{ block.id }}');
+
+    function applyFontChoice(choice) {
+      currentFontChoice = choice;
+      var family = stage.getAttribute('data-font-' + choice + '-family');
+      var fallback = stage.getAttribute('data-font-' + choice + '-fallback');
+      currentFontFamily = family;
+      currentFontFallback = fallback || 'serif';
+
+      // Font 1 and Font 2 can each have their own position, so switching
+      // fonts re-renders both previews at full geometry (not just the
+      // typeface) — and re-samples color too, in case each font's
+      // geometry sits over a different part of the photo.
+      renderAllPreviews();
+      sampleAndApplyColor(imageEl);
+
+      // A web font that was still downloading when this render happened
+      // won't retroactively show up in an already-drawn canvas the way
+      // it would for live HTML text — loading it explicitly, then
+      // rendering again once it's actually available, picks up the real
+      // font as soon as it's ready instead of leaving the fallback
+      // showing until some unrelated redraw happens to occur later.
+      if (family && document.fonts && document.fonts.load) {
+        document.fonts
+          .load('16px "' + family + '"')
+          .then(renderAllPreviews)
+          .catch(function () { });
+      }
+
+      if (family) {
+        mirrorToCartForms('properties[Engraving Font]', family);
+      }
+    }
+
+    if (fontPicker) {
+      var radios = fontPicker.querySelectorAll('input[type="radio"]');
+      radios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          if (radio.checked) applyFontChoice(radio.value);
+        });
+      });
+    }
+    // Establishes the initial font/state for whichever font is selected
+    // by default and does the first render — without this, nothing would
+    // draw at all until the customer manually switched fonts, since that
+    // was the only place this used to be wired from.
+    applyFontChoice(currentFontChoice);
+
+    // Reads the actual pixel color from the product photo at the spot the
+    // engraving sits, instead of a fixed gold tone — so the same effect
+    // looks right whether the product is yellow gold, white gold, rose
+    // gold, or silver, without needing a separate setting per material. A
+    // fresh, CORS-enabled Image is used for sampling rather than the
+    // on-page <img>, since that one doesn't have crossorigin set and
+    // canvas pixel reads need it (a "tainted canvas" security error
+    // otherwise) — Shopify's CDN supports this normally.
+    function averageColor(src, xPercent, yPercent, sizePercent) {
+      return new Promise(function (resolve) {
+        var probe = new Image();
+        probe.crossOrigin = 'anonymous';
+        probe.onload = function () {
+          try {
+            var canvas = document.createElement('canvas');
+            canvas.width = probe.naturalWidth;
+            canvas.height = probe.naturalHeight;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(probe, 0, 0);
+            var sw = Math.max(4, Math.round((sizePercent / 100) * probe.naturalWidth));
+            var sh = Math.max(4, Math.round((sizePercent / 100) * probe.naturalHeight));
+            var sx = Math.max(
+              0,
+              Math.min(probe.naturalWidth - sw, Math.round((xPercent / 100) * probe.naturalWidth - sw / 2)),
+            );
+            var sy = Math.max(
+              0,
+              Math.min(probe.naturalHeight - sh, Math.round((yPercent / 100) * probe.naturalHeight - sh / 2)),
+            );
+            var data = ctx.getImageData(sx, sy, sw, sh).data;
+            var r = 0, g = 0, b = 0, n = 0;
+            for (var i = 0; i < data.length; i += 4) {
+              r += data[i];
+              g += data[i + 1];
+              b += data[i + 2];
+              n++;
+            }
+            resolve({ r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) });
+          } catch (e) {
+            resolve(null);
+          }
+        };
+        probe.onerror = function () {
+          resolve(null);
+        };
+        probe.src = src;
+      });
+    }
+
+    function toHex(rgb) {
+      function h(n) {
+        n = Math.max(0, Math.min(255, n));
+        var s = n.toString(16);
+        return s.length === 1 ? '0' + s : s;
+      }
+      return '#' + h(rgb.r) + h(rgb.g) + h(rgb.b);
+    }
+
+    // Where on the photo to sample from: the current font's zone centre
+    // for a box, or the middle of its arc (not the circle's centre, which
+    // for a ring is often the empty hole rather than the metal) for a
+    // curve. Sampling from this block's own image (rather than the main
+    // photo, which can be a different crop or file) and sharing the
+    // result between both previews keeps them visually consistent with
+    // each other, which matters more than each matching its own photo's
+    // pixels exactly — the two normally show the same product anyway.
+    function sampleAndApplyColor(imgEl) {
+      if (!imgEl) return;
+      var xPercent, yPercent;
+      if (shape === 'straight') {
+        xPercent = geomAttr('x') + geomAttr('width') / 2;
+        yPercent = geomAttr('y') + geomAttr('height') / 2;
+      } else {
+        var startDeg = geomAttr('start-angle');
+        var arcDeg = geomAttr('arc-length');
+        var midRad = ((startDeg + arcDeg / 2) * Math.PI) / 180;
+        var radiusPercent = geomAttr('radius');
+        xPercent = geomAttr('center-x') + radiusPercent * Math.cos(midRad);
+        yPercent = geomAttr('center-y') + radiusPercent * Math.sin(midRad);
+      }
+      averageColor(imgEl.src, xPercent, yPercent, 8).then(function (rgb) {
+        if (!rgb) return;
+        currentBaseColorHex = toHex(rgb);
+        renderAllPreviews();
+      });
+    }
+
+    function whenImageReady(imgEl, cb) {
+      if (imgEl.complete && imgEl.naturalWidth) cb();
+      else imgEl.addEventListener('load', cb);
+    }
+
+    whenImageReady(imageEl, function () {
+      renderInternal();
+      sampleAndApplyColor(imageEl);
+    });
+    if (externalImage) {
+      whenImageReady(externalImage, renderExternal);
+    }
+    window.addEventListener('resize', renderAllPreviews);
+    input.addEventListener('input', renderAllPreviews);
+
+    // Holds all the personalization controls; the trigger button on the
+    // page is what customers actually see before opening it. Its own
+    // label updates to reflect the current text so someone who's already
+    // personalized the product doesn't have to reopen the dialog just to
+    // check what they typed.
+    var trigger = document.getElementById('EngravingTrigger-{{ block.id }}');
+    var triggerLabel = document.getElementById('EngravingTriggerLabel-{{ block.id }}');
+    var dialogEl = document.getElementById('EngravingDialog-{{ block.id }}');
+    var closeBtn = document.getElementById('EngravingClose-{{ block.id }}');
+    var confirmBtn = document.getElementById('EngravingConfirm-{{ block.id }}');
+    var baseTriggerLabel = triggerLabel ? triggerLabel.textContent.trim() : '';
+
+    function updateTriggerLabel() {
+      if (!trigger || !triggerLabel) return;
+      if (input.value) {
+        triggerLabel.textContent = baseTriggerLabel + ': "' + input.value + '"';
+        trigger.classList.add('engraving-preview__trigger--filled');
+      } else {
+        triggerLabel.textContent = baseTriggerLabel;
+        trigger.classList.remove('engraving-preview__trigger--filled');
+      }
+    }
+
+    if (trigger && dialogEl) {
+      trigger.addEventListener('click', function () {
+        dialogEl.showModal();
+        // Reopening to edit means whatever image was confirmed last time
+        // no longer necessarily matches — clearing it now, rather than
+        // waiting for the next close, means there's never a moment where
+        // a stale image could reach the cart alongside newly-edited text.
+        clearFromCartForms('properties[_Engraved Preview]');
+        // The dialog is display:none until opened, so the image has zero
+        // rendered size at page load — any render done then came out
+        // empty. Now that it's actually visible with real dimensions,
+        // redo it.
+        renderInternal();
+      });
+      // A click that lands on the <dialog> element itself (rather than
+      // anything inside it) is a click on its backdrop — closing on that
+      // is the standard "click outside to dismiss" pattern for <dialog>.
+      dialogEl.addEventListener('click', function (e) {
+        if (e.target === dialogEl) dialogEl.close();
+      });
+    }
+    if (closeBtn && dialogEl) {
+      closeBtn.addEventListener('click', function () {
+        dialogEl.close();
+      });
+    }
+    if (confirmBtn && dialogEl) {
+      confirmBtn.addEventListener('click', function () {
+        dialogEl.close();
+      });
+    }
+    input.addEventListener('input', updateTriggerLabel);
+    updateTriggerLabel();
+
+    // This input already has name="properties[Engraving]", so it submits
+    // on its own if the theme happens to render this block inside the
+    // product form it's actually the customer submits. Mirroring on every
+    // keystroke covers the rest: any /cart/add form that doesn't already
+    // contain this input gets its own hidden copy kept in sync, so the
+    // engraving text reaches the cart regardless of which form (or which
+    // "Add to cart" button, if a theme has more than one) is submitted.
+    input.addEventListener('input', function () {
+      mirrorToCartForms('properties[Engraving]', input.value);
+    });
+    mirrorToCartForms('properties[Engraving]', input.value);
+
+
+
+    function hexToRgb01(hex) {
+      var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#96731f');
+      return m
+        ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255]
+        : [0.588, 0.451, 0.122];
+    }
+
+    // Lights a text silhouette the way a real engraved groove catches
+    // light, rather than the flat fill + two offset shadows Canvas 2D's
+    // own APIs can produce: a WebGL fragment shader treats the
+    // silhouette's alpha as a height map, derives a surface normal from
+    // its local slope at each pixel (the same bump-mapping technique
+    // games use), and shades it with actual diffuse + specular lighting.
+    // The visible difference is real — testing the two side by side, the
+    // WebGL version reads as genuinely carved metal, with a proper
+    // gradient and a bright specular edge, where the shadow-based version
+    // reads as flat text with a soft drop shadow under it.
+    function renderEngravedLighting(silhouette, baseColorHex) {
+      var w = silhouette.width;
+      var h = silhouette.height;
+      var out = document.createElement('canvas');
+      out.width = w;
+      out.height = h;
+      var gl = out.getContext('webgl');
+      if (!gl) return null;
+
+      var vsSource =
+        'attribute vec2 aPos; varying vec2 vUv;' +
+        'void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }';
+      var fsSource =
+        'precision mediump float;' +
+        'uniform sampler2D uHeight; uniform vec2 uTexel;' +
+        'uniform vec3 uLightDir; uniform vec3 uBase; uniform vec3 uHi;' +
+        'varying vec2 vUv;' +
+        'void main() {' +
+        '  vec2 uv = vec2(vUv.x, 1.0 - vUv.y);' +
+        '  float h = texture2D(uHeight, uv).a;' +
+        '  float hL = texture2D(uHeight, uv - vec2(uTexel.x, 0.0)).a;' +
+        '  float hR = texture2D(uHeight, uv + vec2(uTexel.x, 0.0)).a;' +
+        '  float hD = texture2D(uHeight, uv - vec2(0.0, uTexel.y)).a;' +
+        '  float hU = texture2D(uHeight, uv + vec2(0.0, uTexel.y)).a;' +
+        '  float strength = 14.0;' +
+        '  vec3 normal = normalize(vec3((hL - hR) * strength, (hD - hU) * strength, 1.0));' +
+        '  vec3 lightDir = normalize(uLightDir);' +
+        '  float diffuse = max(dot(normal, lightDir), 0.0);' +
+        '  vec3 viewDir = vec3(0.0, 0.0, 1.0);' +
+        '  vec3 halfDir = normalize(lightDir + viewDir);' +
+        '  float specular = pow(max(dot(normal, halfDir), 0.0), 24.0);' +
+        '  vec3 color = uBase * (0.35 + 0.75 * diffuse) + uHi * specular * 1.1;' +
+        '  gl_FragColor = vec4(color, h);' +
+        '}';
+
+      function compile(type, src) {
+        var s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
+      }
+      var vs = compile(gl.VERTEX_SHADER, vsSource);
+      var fs = compile(gl.FRAGMENT_SHADER, fsSource);
+      if (!vs || !fs) return null;
+      var prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+      gl.useProgram(prog);
+
+      var quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+      var buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+      var posLoc = gl.getAttribLocation(prog, 'aPos');
+      gl.enableVertexAttribArray(posLoc);
+      gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+      var tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, silhouette);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+      var base = hexToRgb01(baseColorHex);
+      gl.uniform1i(gl.getUniformLocation(prog, 'uHeight'), 0);
+      gl.uniform2f(gl.getUniformLocation(prog, 'uTexel'), 1 / w, 1 / h);
+      gl.uniform3f(gl.getUniformLocation(prog, 'uLightDir'), -0.6, 0.6, 0.5);
+      gl.uniform3f(gl.getUniformLocation(prog, 'uBase'), base[0], base[1], base[2]);
+      gl.uniform3f(gl.getUniformLocation(prog, 'uHi'), 1.0, 0.97, 0.88);
+
+      gl.viewport(0, 0, w, h);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      return out;
+    }
+
+    // Composites the product photo and the current engraving into one
+    // flat PNG — a snapshot of exactly what the dialog is showing, at the
+    // photo's own full resolution rather than the smaller size the dialog
+    // displays it at.
+    function captureEngravingSnapshot() {
+      return new Promise(function (resolve) {
+        if (!imageEl || !imageEl.naturalWidth) return resolve(null);
+        // This only ever displays as a small cart/checkout thumbnail
+        // (~150px in Dawn's own cart-drawer markup) — capturing at the
+        // photo's full resolution just made encoding and uploading slower
+        // for detail nobody will see. Capping the longer side at 500px is
+        // still 3x that display size, plenty for retina screens.
+        var maxDimension = 500;
+        var scale = Math.min(1, maxDimension / Math.max(imageEl.naturalWidth, imageEl.naturalHeight));
+        var naturalW = Math.round(imageEl.naturalWidth * scale);
+        var naturalH = Math.round(imageEl.naturalHeight * scale);
+
+        var canvas = document.createElement('canvas');
+        canvas.width = naturalW;
+        canvas.height = naturalH;
+        var ctx = canvas.getContext('2d');
+
+        var baseImg = new Image();
+        baseImg.crossOrigin = 'anonymous';
+        baseImg.onload = function () {
+          ctx.drawImage(baseImg, 0, 0, naturalW, naturalH);
+
+          var silhouette = document.createElement('canvas');
+          silhouette.width = naturalW;
+          silhouette.height = naturalH;
+          drawEngravingSilhouette(silhouette.getContext('2d'), naturalW, naturalH);
+
+          var lit = renderEngravedLighting(silhouette, currentBaseColorHex);
+          if (lit) {
+            ctx.drawImage(lit, 0, 0);
+          } else {
+            // WebGL unavailable for some reason — a flat tint of the
+            // silhouette is still readable, just without the carved
+            // shading.
+            ctx.drawImage(silhouette, 0, 0);
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.fillStyle = currentBaseColorHex;
+            ctx.fillRect(0, 0, naturalW, naturalH);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+
+          // JPEG encodes noticeably faster than PNG for a photo like this
+          // (no transparency to preserve) and produces a smaller file,
+          // speeding up the upload step too; 0.88 quality is well past
+          // the point of any visible difference at thumbnail size.
+          canvas.toBlob(function (blob) {
+            resolve(blob);
+          }, 'image/jpeg', 0.88);
+        };
+        baseImg.onerror = function () {
+          resolve(null);
+        };
+        baseImg.src = imageEl.src;
+      });
+    }
+
+
+    // Shared by both triggers below: closing the dialog starts this early
+    // (usually finished well before "Add to cart" is ever clicked), and
+    // the click handler falls back to starting it itself only if nothing
+    // is already running — so there's never a duplicate, wasted capture.
+    // A timeout, and falling back to submitting anyway on any failure,
+    // means a slow or broken upload never actually blocks the purchase.
+    function uploadEngravingImage() {
+      var timeout = new Promise(function (resolve) {
+        setTimeout(function () {
+          resolve(null);
+        }, 8000);
+      });
+      return Promise.race([captureEngravingSnapshot(), timeout])
+        .then(function (blob) {
+          if (!blob) return null;
+          var uploadForm = new FormData();
+          uploadForm.append('image', blob, 'engraving.jpg');
+          return Promise.race([
+            fetch('/apps/engraving/upload-preview', { method: 'POST', body: uploadForm }).then(
+              function (res) {
+                return res.json();
+              },
+            ),
+            timeout,
+          ]);
+        })
+        .then(function (data) {
+          if (data && data.url) {
+            mirrorToCartForms('properties[_Engraved Preview]', data.url);
+          }
+        })
+        .catch(function () {
+          // No image this time; the text/font properties still went
+          // through normally, so the order itself is unaffected.
+        });
+    }
+
+    var pendingUpload = null;
+
+    dialogEl.addEventListener('close', function () {
+      if (!input.value) return;
+      pendingUpload = uploadEngravingImage();
+    });
+
+    // Catching the click on the button itself, in the capture phase
+    // (before the theme's own handler — Dawn's cart.js here — which
+    // listens in the normal bubble phase and would otherwise read the
+    // form before the image URL is attached), pauses just this one click
+    // until the upload — usually already finished by now — is done, then
+    // lets it through for real.
+    document.querySelectorAll('form[action^="/cart/add"]').forEach(function (form) {
+      var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+      buttons.forEach(function (button) {
+        button.addEventListener(
+          'click',
+          function (e) {
+            if (button.dataset.engravingReady === 'true') {
+              delete button.dataset.engravingReady;
+              return;
+            }
+            var engravingField = form.querySelector('input[name="properties[Engraving]"]');
+            if (!engravingField || !engravingField.value) return;
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            var upload = pendingUpload || uploadEngravingImage();
+            upload.then(function () {
+              button.dataset.engravingReady = 'true';
+              button.click();
+            });
+          },
+          true,
+        );
+      });
+    });
+  })();
+</script>
+{% endif %}
+
+{% schema %}
+{
+"name": "Engraving preview",
+"target": "section",
+"settings": [
+{ "type": "product", "id": "product", "label": "Product", "autofill": true },
+{ "type": "text", "id": "button_label", "label": "Button label", "default": "Personalize" },
+{ "type": "text", "id": "confirm_label", "label": "Confirm button label", "default": "Done" },
+{ "type": "text", "id": "label", "label": "Dialog title / input label", "default": "Personalize with engraving" },
+{ "type": "text", "id": "placeholder", "label": "Input placeholder", "default": "Type your engraving..." },
+{ "type": "header", "content": "Fonts" },
+{ "type": "paragraph", "content": "Font 1 and Font 2 are uploaded once for the whole store in the app's Font settings page — this block just renders whichever one each product's engraving zone is set to use." }
+]
+}
+{% endschema %}

@@ -1,0 +1,11 @@
+query CartTransformRunInput {
+  cart {
+    lines {
+      id
+      quantity
+      engravedPreview: attribute(key: "_Engraved Preview") {
+        value
+      }
+    }
+  }
+}
