@@ -6,91 +6,33 @@ assign img = block.settings.product.featured_image
 
 {% if zone and img %}
 <style>
-  {
-    % if shop_fonts.fontOne %
-  }
-
+  {% if shop_fonts.fontOne %}
   @font-face {
     font-family: "{{ shop_fonts.fontOne.familyName }}";
     src: url("{{ shop_fonts.fontOne.url }}");
     font-display: swap;
   }
+  {% endif %}
 
-    {
-    % endif %
-  }
-
-    {
-    % if shop_fonts.fontTwo %
-  }
-
+  {% if shop_fonts.fontTwo %}
   @font-face {
     font-family: "{{ shop_fonts.fontTwo.familyName }}";
     src: url("{{ shop_fonts.fontTwo.url }}");
     font-display: swap;
   }
-
-    {
-    % endif %
-  }
+  {% endif %}
 </style>
 
 <div class="engraving-preview" {{ block.shopify_attributes }}>
   <style>
-    #EngravingTrigger- {
-        {
-        block.id
-      }
-    }
-
-      {
-      --btn-height: {
-          {
-          block.settings.button_height
-        }
-      }
-
-      px;
-
-      --btn-radius: {
-          {
-          block.settings.button_radius
-        }
-      }
-
-      px;
-
-      --btn-bg: {
-          {
-          block.settings.button_bg
-        }
-      }
-
-      ;
-
-      --btn-bg-hover: {
-          {
-          block.settings.button_bg_hover
-        }
-      }
-
-      ;
-
-      --btn-text: {
-          {
-          block.settings.button_text
-        }
-      }
-
-      ;
-
-      --btn-text-hover: {
-          {
-          block.settings.button_text_hover
-        }
-      }
-
-      ;
+    #EngravingTrigger-{{ block.id }} {
+      --btn-radius: {{ block.settings.button_radius | default: 8 }}px;
+      --btn-bg: {{ block.settings.button_bg | default: '#ffffff' }};
+      --btn-bg-hover: {{ block.settings.button_bg_hover | default: '#16233d' }};
+      --btn-text: {{ block.settings.button_text | default: '#16233d' }};
+      --btn-text-hover: {{ block.settings.button_text_hover | default: '#ffffff' }};
+      --btn-bg-filled: {{ block.settings.button_bg_filled | default: '#16233d' }};
+      --btn-text-filled: {{ block.settings.button_text_filled | default: '#ffffff' }};
     }
   </style>
   <button type="button" class="engraving-preview__trigger" id="EngravingTrigger-{{ block.id }}">
@@ -196,7 +138,8 @@ assign img = block.settings.product.featured_image
     </div>
 
     <div class="engraving-preview__stage" id="EngravingStage-{{ block.id }}" data-shape="{{ zone.shape }}"
-      data-font-choice="{{ zone.fontChoice }}" data-font-one-family="{{ shop_fonts.fontOne.familyName }}"
+      data-font-choice="{{ zone.fontChoice }}" data-uppercase-only="{{ zone.uppercaseOnly }}"
+      data-font-one-family="{{ shop_fonts.fontOne.familyName }}"
       data-font-one-fallback="{{ shop_fonts.fontOne.fallback }}"
       data-font-two-family="{{ shop_fonts.fontTwo.familyName }}"
       data-font-two-fallback="{{ shop_fonts.fontTwo.fallback }}" data-one-font-size="{{ zone.fontOne.fontSize }}"
@@ -215,24 +158,34 @@ assign img = block.settings.product.featured_image
       <canvas class="engraving-preview__canvas" id="EngravingCanvas-{{ block.id }}"></canvas>
     </div>
 
+    <script type="application/json" id="EngravingVariantImages-{{ block.id }}">
+      {
+        {% for variant in block.settings.product.variants %}
+          {% assign v_img = variant.featured_image | default: img %}
+          "{{ variant.id }}": {{ v_img | image_url: width: 800 | json }}{% unless forloop.last %},{% endunless %}
+        {% endfor %}
+      }
+    </script>
+
     <input type="text" id="EngravingInput-{{ block.id }}" class="engraving-preview__input" name="properties[Engraving]"
       maxlength="{{ zone.maxLength }}" placeholder="{{ block.settings.placeholder }}"
-      aria-label="{{ block.settings.label }}" autocomplete="off">
+      aria-label="{{ block.settings.label }}" autocomplete="off"
+      {% if zone.uppercaseOnly %}style="text-transform: uppercase;"{% endif %}>
 
     {% if shop_fonts.fontOne or shop_fonts.fontTwo %}
     <span class="engraving-preview__label">Letter Type</span>
     <div class="engraving-preview__font-picker" id="EngravingFontPicker-{{ block.id }}">
       {% if shop_fonts.fontOne %}
       <label class="engraving-preview__font-option">
-        <input type="radio" name="engraving-font-{{ block.id }}" value="one" {% if zone.fontChoice=='one' %}checked{%
-          endif %}>
+        <input type="radio" name="engraving-font-{{ block.id }}" value="one"
+          {% if zone.fontChoice == 'one' %}checked{% endif %}>
         <span style="font-family:'{{ shop_fonts.fontOne.familyName }}', {{ shop_fonts.fontOne.fallback }};">A</span>
       </label>
       {% endif %}
       {% if shop_fonts.fontTwo %}
       <label class="engraving-preview__font-option">
-        <input type="radio" name="engraving-font-{{ block.id }}" value="two" {% if zone.fontChoice=='two' %}checked{%
-          endif %}>
+        <input type="radio" name="engraving-font-{{ block.id }}" value="two"
+          {% if zone.fontChoice == 'two' %}checked{% endif %}>
         <span style="font-family:'{{ shop_fonts.fontTwo.familyName }}', {{ shop_fonts.fontTwo.fallback }};">A</span>
       </label>
       {% endif %}
@@ -242,6 +195,15 @@ assign img = block.settings.product.featured_image
     <button type="button" class="engraving-preview__confirm" id="EngravingConfirm-{{ block.id }}">
       {{ block.settings.confirm_label }}
     </button>
+
+    <div class="engraving-preview__loading" id="EngravingLoading-{{ block.id }}" aria-live="polite" hidden>
+      <span class="engraving-preview__spinner" aria-hidden="true"></span>
+      <span>Adding to cart…</span>
+    </div>
+
+    <p class="engraving-preview__error" id="EngravingError-{{ block.id }}" role="alert" hidden>
+      Something went wrong adding this to your cart — please try again.
+    </p>
   </dialog>
 </div>
 
@@ -257,37 +219,38 @@ assign img = block.settings.product.featured_image
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.6em;
-    padding: 0 1.5em;
-    height: var(--btn-height, 3.5em);
-    max-height: 3.125rem;
+    gap: 0.6rem;
+    padding: 0 1.5rem;
+    height: 3.25rem !important;
+    max-height: 3.25rem !important;
+    box-sizing: border-box !important;
     border: 1.5px solid var(--engrave-navy);
-    border-radius: var(--btn-radius, 8px);
-    background: var(--btn-bg, #fff);
-    color: var(--btn-text, var(--engrave-navy));
+    border-radius: var(--btn-radius, 8px) !important;
+    background: var(--btn-bg, #fff) !important;
+    color: var(--btn-text, var(--engrave-navy)) !important;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1.25rem;
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.03rem;
     width: 100%;
     max-width: 44rem;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
   .engraving-preview__trigger:hover {
-    background: var(--btn-bg-hover, var(--engrave-navy));
-    color: var(--btn-text-hover, #fff);
+    background: var(--btn-bg-hover, var(--engrave-navy)) !important;
+    color: var(--btn-text-hover, #fff) !important;
   }
 
   .engraving-preview__trigger-icon {
-    width: 2em;
-    height: 2em;
+    width: 2rem;
+    height: 2rem;
     flex-shrink: 0;
   }
 
   .engraving-preview__trigger--filled {
-    background: var(--btn-bg-hover, var(--engrave-navy));
-    color: var(--btn-text-hover, #fff);
+    background: var(--btn-bg-filled, var(--engrave-navy)) !important;
+    color: var(--btn-text-filled, #fff) !important;
   }
 
   /* The host theme's own CSS can carry rules that target the bare
@@ -329,18 +292,17 @@ assign img = block.settings.product.featured_image
     align-items: center;
     justify-content: space-between;
     margin-bottom: 1rem;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.2em;
+    font-size: 1.25rem;
     font-weight: 600;
   }
 
   .engraving-preview__close {
     background: none;
     border: none;
-    font-size: 1.5em;
+    font-size: 1.5rem;
     line-height: 1;
     cursor: pointer;
-    padding: 0.1em 0.4em;
+    padding: 0.1rem 0.4rem;
     max-height: 3.125rem;
     box-sizing: border-box;
     color: var(--engrave-navy);
@@ -350,23 +312,72 @@ assign img = block.settings.product.featured_image
     display: block;
     width: 100%;
     margin-top: 1.25rem;
-    padding: 0.9em;
-    max-height: 3.125rem;
+    padding: 0 0.9rem;
+    height: 3.125rem;
     box-sizing: border-box;
     background: var(--engrave-navy);
     color: #fff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.04rem;
     text-transform: uppercase;
     transition: background 0.15s ease;
   }
 
   .engraving-preview__confirm:hover {
     background: var(--engrave-navy-dark);
+  }
+
+  .engraving-preview__confirm:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* Covers the entire dialog while the snapshot uploads and the cart
+     form submits, so nothing underneath (close button, backdrop, the
+     confirm button itself) can be clicked mid-flight — a second click
+     here would fire a second upload/add-to-cart, and closing partway
+     through would abandon an upload that's already in progress. */
+  .engraving-preview__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: var(--engrave-cream);
+    border-radius: 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--engrave-navy);
+    z-index: 1;
+  }
+
+  .engraving-preview__spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2.5px solid var(--engrave-border);
+    border-top-color: var(--engrave-navy);
+    border-radius: 50%;
+    animation: engraving-spin 0.7s linear infinite;
+  }
+
+  @keyframes engraving-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .engraving-preview__error {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    background: #fbe9e7;
+    color: #9a3324;
+    font-size: 0.9rem;
   }
 
   .engraving-preview__stage {
@@ -395,9 +406,9 @@ assign img = block.settings.product.featured_image
   .engraving-preview__label {
     display: block;
     margin-top: 1rem;
-    font-size: 0.85em;
+    font-size: 1rem;
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.03rem;
     text-transform: uppercase;
     color: var(--engrave-navy);
   }
@@ -405,11 +416,11 @@ assign img = block.settings.product.featured_image
   .engraving-preview__input {
     display: block;
     width: 100%;
-    margin-top: 0.4em;
-    padding: 0.75em 0.9em;
+    margin-top: 0.4rem;
+    padding: 0.75rem 0.9rem;
     max-height: 3.125rem;
     box-sizing: border-box;
-    font-size: 1em;
+    font-size: 1rem;
     background: #fff;
     border: 1.5px solid var(--engrave-border);
     border-radius: 8px;
@@ -423,8 +434,8 @@ assign img = block.settings.product.featured_image
 
   .engraving-preview__font-picker {
     display: flex;
-    gap: 0.6em;
-    margin-top: 0.5em;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
   }
 
   .engraving-preview__font-option {
@@ -432,14 +443,14 @@ assign img = block.settings.product.featured_image
     align-items: center;
     justify-content: center;
     flex: 1;
-    gap: 0.4em;
+    gap: 0.4rem;
     border: 1.5px solid var(--engrave-border);
     border-radius: 999px;
-    padding: 0.6em 1em;
+    padding: 0.6rem 1rem;
     max-height: 3.125rem;
     box-sizing: border-box;
     cursor: pointer;
-    font-size: 1.2em;
+    font-size: 1.2rem;
     background: #fff;
     color: var(--engrave-navy);
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -462,13 +473,6 @@ assign img = block.settings.product.featured_image
   (function () {
     var input = document.getElementById('EngravingInput-{{ block.id }}');
 
-    // Some themes render more than one /cart/add form on the same page —
-    // a separate one for a sticky mobile bar is common — so picking just
-    // the first one (the old approach) can silently miss whichever form
-    // the customer's actual "Add to cart" button belongs to. Mirroring
-    // into every matching form, keyed by name so repeated calls update
-    // rather than duplicate, means the property reaches the cart no
-    // matter which button was clicked.
     function mirrorToCartForms(name, value) {
       var forms = document.querySelectorAll('form[action^="/cart/add"]');
       forms.forEach(function (form) {
@@ -484,13 +488,6 @@ assign img = block.settings.product.featured_image
       });
     }
 
-    // Removes a property from every matching form entirely, rather than
-    // just emptying it — used when reopening the dialog to edit, so a
-    // confirmed image from a previous edit can never end up attached
-    // alongside text/font that no longer matches it (say, if "Add to
-    // cart" were somehow reached before the new edit's own upload has
-    // finished). No image is a safe fallback (the product's normal photo
-    // shows instead); a mismatched one isn't.
     function clearFromCartForms(name) {
       document.querySelectorAll('form[action^="/cart/add"]').forEach(function (form) {
         var hidden = form.querySelector('input[name="' + name + '"]');
@@ -501,23 +498,14 @@ assign img = block.settings.product.featured_image
     if (!input || !stage) return;
 
     var shape = stage.getAttribute('data-shape');
+    var uppercaseOnly = stage.getAttribute('data-uppercase-only') === 'true';
     var imageEl = stage.querySelector('.engraving-preview__image');
     var currentFontChoice = stage.getAttribute('data-font-choice') || 'one';
 
-    // Font 1 and Font 2 can each have their own position/size/curve (a
-    // wide script and a compact sans often need different boxes to sit
-    // well) — reading every geometry value through this one helper, keyed
-    // by which font is picked right now, is what lets switching the radio
-    // re-run a full layout instead of just changing the typeface.
     function geomAttr(name) {
       return parseFloat(stage.getAttribute('data-' + currentFontChoice + '-' + name));
     }
 
-
-    // Tracks the font currently in use and the color sampled from the
-    // photo, so every render (triggered by typing, switching fonts, or
-    // just resizing) can redraw from this shared state rather than each
-    // caller needing to know font/color separately.
     var currentFontFamily = null;
     var currentFontFallback = 'serif';
     var currentBaseColorHex = '#96731f';
@@ -526,16 +514,6 @@ assign img = block.settings.product.featured_image
       return currentFontFamily ? "'" + currentFontFamily + "', " + currentFontFallback : currentFontFallback;
     }
 
-    // Draws a plain, solid-white silhouette of the current text — no
-    // color or shading of its own — using the zone's real geometry
-    // (straight centering, or real-glyph-width-based per-character
-    // placement around the curve). This is deliberately *not* the final
-    // look: it becomes the height-map input to the WebGL lighting pass
-    // below, which is what actually shades it, so this function's only
-    // job is getting the letterforms in the right place. Shared by the
-    // live preview (redrawn on every keystroke) and the cart snapshot
-    // (drawn once at add-to-cart time) — same positioning math either
-    // way, just at whatever w/h the caller is rendering at.
     function drawEngravingSilhouette(ctx, w, h) {
       var text = input.value;
       if (!text) return;
@@ -566,14 +544,6 @@ assign img = block.settings.product.featured_image
         var chars = Array.from(text);
         ctx.font = fontPx2 + 'px ' + currentFontFamilyCss();
 
-        // Measures each character's real rendered width, rather than
-        // splitting the configured arc evenly by character count — even
-        // spacing looked fine for short words, but for longer text it
-        // doesn't match how wide the word actually is and can run past
-        // the edge of the band. Converting each character's pixel width
-        // to the angular span it needs at this radius, and centering the
-        // whole word on the zone's own midpoint angle, keeps it
-        // contained regardless of length.
         var charWidths = chars.map(function (ch) {
           return ctx.measureText(ch).width;
         });
@@ -602,13 +572,6 @@ assign img = block.settings.product.featured_image
       ctx.restore();
     }
 
-    // Renders the current text onto whichever canvas is passed in (the
-    // in-dialog preview, the overlay on the main photo, or — later — the
-    // cart snapshot), at that canvas's own size: draw a silhouette at
-    // this size, light it (see renderEngravedLighting, defined below but
-    // usable here since function declarations are hoisted), and
-    // composite the lit result on top. Clearing first means an emptied
-    // input correctly shows nothing rather than the last thing typed.
     function renderToCanvas(canvasEl, w, h) {
       if (!canvasEl || !w || !h) return;
       canvasEl.width = w;
@@ -626,8 +589,6 @@ assign img = block.settings.product.featured_image
       if (lit) {
         ctx.drawImage(lit, 0, 0);
       } else {
-        // WebGL unavailable for some reason — a flat tint of the
-        // silhouette is still readable, just without the carved shading.
         ctx.drawImage(silhouette, 0, 0);
         ctx.globalCompositeOperation = 'source-in';
         ctx.fillStyle = currentBaseColorHex;
@@ -643,15 +604,6 @@ assign img = block.settings.product.featured_image
       renderToCanvas(internalCanvas, imageEl.clientWidth, imageEl.clientHeight);
     }
 
-    // Optional: the engraving also overlays onto the product's main photo
-    // elsewhere on the page, alongside the app's own preview inside the
-    // dialog — so customers see it live on the page, not just when the
-    // popup is open. Prefer an explicit data-engraving-target if the
-    // merchant added one; otherwise fall back to the first <img> in this
-    // block's own section. Shopify always wraps every section in an
-    // element whose id starts with "shopify-section-", a platform
-    // guarantee rather than a theme-specific detail, so this works the
-    // same regardless of theme.
     var ownBlock = stage.closest('.engraving-preview');
     var sectionEl = ownBlock ? ownBlock.closest('[id^="shopify-section-"]') : null;
     var externalImage = document.querySelector('[data-engraving-target]');
@@ -697,19 +649,9 @@ assign img = block.settings.product.featured_image
       currentFontFamily = family;
       currentFontFallback = fallback || 'serif';
 
-      // Font 1 and Font 2 can each have their own position, so switching
-      // fonts re-renders both previews at full geometry (not just the
-      // typeface) — and re-samples color too, in case each font's
-      // geometry sits over a different part of the photo.
       renderAllPreviews();
       sampleAndApplyColor(imageEl);
 
-      // A web font that was still downloading when this render happened
-      // won't retroactively show up in an already-drawn canvas the way
-      // it would for live HTML text — loading it explicitly, then
-      // rendering again once it's actually available, picks up the real
-      // font as soon as it's ready instead of leaving the fallback
-      // showing until some unrelated redraw happens to occur later.
       if (family && document.fonts && document.fonts.load) {
         document.fonts
           .load('16px "' + family + '"')
@@ -730,20 +672,8 @@ assign img = block.settings.product.featured_image
         });
       });
     }
-    // Establishes the initial font/state for whichever font is selected
-    // by default and does the first render — without this, nothing would
-    // draw at all until the customer manually switched fonts, since that
-    // was the only place this used to be wired from.
     applyFontChoice(currentFontChoice);
 
-    // Reads the actual pixel color from the product photo at the spot the
-    // engraving sits, instead of a fixed gold tone — so the same effect
-    // looks right whether the product is yellow gold, white gold, rose
-    // gold, or silver, without needing a separate setting per material. A
-    // fresh, CORS-enabled Image is used for sampling rather than the
-    // on-page <img>, since that one doesn't have crossorigin set and
-    // canvas pixel reads need it (a "tainted canvas" security error
-    // otherwise) — Shopify's CDN supports this normally.
     function averageColor(src, xPercent, yPercent, sizePercent) {
       return new Promise(function (resolve) {
         var probe = new Image();
@@ -794,14 +724,6 @@ assign img = block.settings.product.featured_image
       return '#' + h(rgb.r) + h(rgb.g) + h(rgb.b);
     }
 
-    // Where on the photo to sample from: the current font's zone centre
-    // for a box, or the middle of its arc (not the circle's centre, which
-    // for a ring is often the empty hole rather than the metal) for a
-    // curve. Sampling from this block's own image (rather than the main
-    // photo, which can be a different crop or file) and sharing the
-    // result between both previews keeps them visually consistent with
-    // each other, which matters more than each matching its own photo's
-    // pixels exactly — the two normally show the same product anyway.
     function sampleAndApplyColor(imgEl) {
       if (!imgEl) return;
       var xPercent, yPercent;
@@ -836,19 +758,122 @@ assign img = block.settings.product.featured_image
       whenImageReady(externalImage, renderExternal);
     }
     window.addEventListener('resize', renderAllPreviews);
+
+    // Runs before the other input listeners below (canvas redraw, mirroring
+    // to the cart form) so they all see the already-uppercased value — the
+    // CSS text-transform on the input only changes how letters are drawn on
+    // screen, not the actual characters, so without this the submitted
+    // property and the canvas render would still get whatever case the
+    // customer actually typed. Restoring the caret position afterward stops
+    // the cursor jumping to the end on every keystroke, which re-setting
+    // .value would otherwise cause if the customer edits mid-string rather
+    // than only ever typing at the end.
+    if (uppercaseOnly) {
+      input.addEventListener('input', function () {
+        var caret = input.selectionStart;
+        input.value = input.value.toUpperCase();
+        input.setSelectionRange(caret, caret);
+      });
+    }
+
     input.addEventListener('input', renderAllPreviews);
 
-    // Holds all the personalization controls; the trigger button on the
-    // page is what customers actually see before opening it. Its own
-    // label updates to reflect the current text so someone who's already
-    // personalized the product doesn't have to reopen the dialog just to
-    // check what they typed.
+    // Variant color swatches (yellow/rose/white gold, say) each have their
+    // own product photo, and the popup should follow whichever one the
+    // customer currently has selected — the engraving's own position stays
+    // the same (it's expressed as percentages of the image, and same-piece
+    // variant photos share the same crop/composition), only the underlying
+    // photo changes. Themes signal a variant change in different ways (a
+    // custom event, a plain <select>, radio swatches, or just setting a
+    // hidden field's value directly via JS with no event at all) — rather
+    // than betting on one specific mechanism, this covers the common event
+    // names AND polls the variant id field's value as a guaranteed fallback
+    // that works regardless of how this theme happens to do it.
+    var variantImagesScript = document.getElementById('EngravingVariantImages-{{ block.id }}');
+    var variantImages = {};
+    if (variantImagesScript) {
+      try {
+        variantImages = JSON.parse(variantImagesScript.textContent);
+      } catch (e) {
+        variantImages = {};
+      }
+    }
+
+    var productForm = stage.closest('form') || (sectionEl && sectionEl.querySelector('form[action^="/cart/add"]'));
+    // Same reasoning as the button lookup below: this theme's app block
+    // doesn't sit inside the product form, and the page can have more
+    // than one cart-add form (an unrelated, fieldless one included) — so
+    // rather than trust productForm alone, every cart-add form is
+    // checked for one that actually has a variant id field.
+    var variantIdField = productForm ? productForm.querySelector('[name="id"]') : null;
+    if (!variantIdField) {
+      var idCandidateForms = document.querySelectorAll('form[action^="/cart/add"]');
+      for (var vf = 0; vf < idCandidateForms.length; vf++) {
+        var idCandidate = idCandidateForms[vf].querySelector('[name="id"]');
+        if (idCandidate) {
+          variantIdField = idCandidate;
+          break;
+        }
+      }
+    }
+    var lastSeenVariantId = variantIdField ? variantIdField.value : null;
+
+    // Whatever variant is already selected when the page loads — from a
+    // ?variant= link, or just the theme's own default pick — needs its
+    // image applied right away too, not only on the next change. Without
+    // this, arriving via a variant-specific link still shows the block's
+    // default photo until the customer touches the variant picker once.
+    if (lastSeenVariantId) {
+      swapToVariantImage(lastSeenVariantId);
+    }
+
+    function swapToVariantImage(variantId) {
+      var url = variantImages[String(variantId)];
+      if (!url || !imageEl || imageEl.src === url) return;
+      imageEl.src = url;
+      whenImageReady(imageEl, function () {
+        renderInternal();
+        sampleAndApplyColor(imageEl);
+        renderExternal();
+      });
+    }
+
+    function checkVariantChange() {
+      if (!variantIdField) return;
+      var current = variantIdField.value;
+      if (current && current !== lastSeenVariantId) {
+        lastSeenVariantId = current;
+        swapToVariantImage(current);
+      }
+    }
+
+    if (variantIdField && Object.keys(variantImages).length > 0) {
+      document.addEventListener('variant:change', function (e) {
+        if (e.detail && e.detail.variant) swapToVariantImage(e.detail.variant.id);
+      });
+      if (productForm) {
+        productForm.addEventListener('change', checkVariantChange);
+      }
+      // Polling is the guaranteed catch-all: some themes update the
+      // variant id purely via JS property assignment, which fires no
+      // event at all for a 'change' listener to catch.
+      setInterval(checkVariantChange, 400);
+    }
+
     var trigger = document.getElementById('EngravingTrigger-{{ block.id }}');
     var triggerLabel = document.getElementById('EngravingTriggerLabel-{{ block.id }}');
     var dialogEl = document.getElementById('EngravingDialog-{{ block.id }}');
     var closeBtn = document.getElementById('EngravingClose-{{ block.id }}');
     var confirmBtn = document.getElementById('EngravingConfirm-{{ block.id }}');
+    var loadingEl = document.getElementById('EngravingLoading-{{ block.id }}');
     var baseTriggerLabel = triggerLabel ? triggerLabel.textContent.trim() : '';
+
+    // True for the whole upload + add-to-cart sequence triggered by the
+    // popup's own button — every other way of leaving the dialog (the ×
+    // button, clicking the backdrop, pressing Escape) is blocked while
+    // this is true, so a stray click can't abandon an upload that's
+    // already in flight or fire a second one alongside it.
+    var isProcessing = false;
 
     function updateTriggerLabel() {
       if (!trigger || !triggerLabel) return;
@@ -864,50 +889,146 @@ assign img = block.settings.product.featured_image
     if (trigger && dialogEl) {
       trigger.addEventListener('click', function () {
         dialogEl.showModal();
-        // Reopening to edit means whatever image was confirmed last time
-        // no longer necessarily matches — clearing it now, rather than
-        // waiting for the next close, means there's never a moment where
-        // a stale image could reach the cart alongside newly-edited text.
         clearFromCartForms('properties[_Engraved Preview]');
-        // The dialog is display:none until opened, so the image has zero
-        // rendered size at page load — any render done then came out
-        // empty. Now that it's actually visible with real dimensions,
-        // redo it.
         renderInternal();
       });
-      // A click that lands on the <dialog> element itself (rather than
-      // anything inside it) is a click on its backdrop — closing on that
-      // is the standard "click outside to dismiss" pattern for <dialog>.
       dialogEl.addEventListener('click', function (e) {
+        if (isProcessing) return;
         if (e.target === dialogEl) dialogEl.close();
+      });
+      // <dialog> closes on Escape natively before any 'close' handler
+      // runs — 'cancel' fires first and is cancelable, so this is the
+      // hook that actually stops it mid-upload.
+      dialogEl.addEventListener('cancel', function (e) {
+        if (isProcessing) e.preventDefault();
       });
     }
     if (closeBtn && dialogEl) {
       closeBtn.addEventListener('click', function () {
+        if (isProcessing) return;
         dialogEl.close();
       });
     }
     if (confirmBtn && dialogEl) {
       confirmBtn.addEventListener('click', function () {
-        dialogEl.close();
+        if (isProcessing) return;
+        if (!input.value) {
+          dialogEl.close();
+          return;
+        }
+
+        isProcessing = true;
+        confirmBtn.disabled = true;
+        if (closeBtn) closeBtn.disabled = true;
+        if (loadingEl) loadingEl.hidden = false;
+        var errorEl = document.getElementById('EngravingError-{{ block.id }}');
+        if (errorEl) errorEl.hidden = true;
+
+        function finishProcessing() {
+          isProcessing = false;
+          confirmBtn.disabled = false;
+          if (closeBtn) closeBtn.disabled = false;
+          if (loadingEl) loadingEl.hidden = true;
+        }
+
+        pendingUpload = uploadEngravingImage();
+        pendingUpload
+          .then(function (previewUrl) {
+            // Adds directly through Shopify's own cart AJAX endpoint —
+            // deliberately not dependent on locating or clicking any
+            // button the theme provides, since this needs to keep
+            // working even on a product page that has no separate add-
+            // to-cart control of its own at all.
+            var properties = { Engraving: input.value };
+            if (currentFontFamily) properties['Engraving Font'] = currentFontFamily;
+            if (previewUrl) properties['_Engraved Preview'] = previewUrl;
+
+            return fetch('/cart/add.js', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+              body: JSON.stringify({
+                items: [
+                  {
+                    id: variantIdField ? variantIdField.value : null,
+                    quantity: 1,
+                    properties: properties,
+                  },
+                ],
+                sections: 'cart-drawer,cart-icon-bubble',
+                sections_url: window.location.pathname,
+              }),
+            });
+          })
+          .then(function (response) {
+            if (!response.ok) throw new Error('cart add failed');
+            return response.json();
+          })
+          .then(function (data) {
+            openSideCartBestEffort(data);
+            finishProcessing();
+            dialogEl.close();
+          })
+          .catch(function () {
+            finishProcessing();
+            if (errorEl) errorEl.hidden = false;
+          });
       });
     }
     input.addEventListener('input', updateTriggerLabel);
     updateTriggerLabel();
 
-    // This input already has name="properties[Engraving]", so it submits
-    // on its own if the theme happens to render this block inside the
-    // product form it's actually the customer submits. Mirroring on every
-    // keystroke covers the rest: any /cart/add form that doesn't already
-    // contain this input gets its own hidden copy kept in sync, so the
-    // engraving text reaches the cart regardless of which form (or which
-    // "Add to cart" button, if a theme has more than one) is submitted.
     input.addEventListener('input', function () {
       mirrorToCartForms('properties[Engraving]', input.value);
     });
     mirrorToCartForms('properties[Engraving]', input.value);
 
-
+    // Best-effort only: there's no single standard for "open the side
+    // cart", so this tries the specific pattern this theme's own
+    // cart-drawer.liquid uses (a <cart-drawer> element with an open()
+    // method mirroring the close() its own close button calls), then
+    // falls back to a handful of event names many themes listen for to
+    // refresh or reveal their cart UI. Dispatching ones nobody listens
+    // for costs nothing, so this stays harmless if none of it matches.
+    // Best-effort: there's no single standard for "open the side cart",
+    // so this tries progressively more generic approaches. Most specific
+    // first — this theme's own <cart-drawer> exposes renderContents(),
+    // which both swaps in the fresh cart-drawer/cart-icon-bubble HTML
+    // (from the sections data requested in the /cart/add.js call above)
+    // and opens itself afterward, so calling it alone does both jobs.
+    // Only when that's not available does this fall back to a plain
+    // open() (correct content, just not refreshed) or a handful of event
+    // names other themes commonly listen for — dispatching ones nobody
+    // listens for costs nothing, so this stays harmless either way.
+    function openSideCartBestEffort(cartAddData) {
+      var cartDrawer = document.querySelector('cart-drawer');
+      if (cartDrawer && typeof cartDrawer.renderContents === 'function' && cartAddData && cartAddData.sections) {
+        // The theme's own renderContents() tries to clear "is-empty" but
+        // checks .drawer__inner for it — the class actually lives on the
+        // <cart-drawer> element itself (per its own cart-drawer.liquid),
+        // so that check silently never matches and the class is left
+        // behind after the very first add from an empty cart. Nothing
+        // about the swapped-in HTML is wrong, but this stale class stays
+        // on an element renderContents doesn't touch (it only replaces
+        // #CartDrawer's innerHTML), and empty-state CSS keyed off it can
+        // keep the drawer looking empty even though the item is really
+        // there. Clearing it ourselves — safe once an add has actually
+        // succeeded — works around that rather than depending on a fix
+        // to the theme's own code.
+        cartDrawer.classList.remove('is-empty');
+        cartDrawer.renderContents(cartAddData);
+        return;
+      }
+      if (cartDrawer && typeof cartDrawer.open === 'function') {
+        cartDrawer.open();
+        return;
+      }
+      ['cart:updated', 'cart:refresh', 'cart:build', 'cart:open'].forEach(function (name) {
+        document.dispatchEvent(new CustomEvent(name, { bubbles: true }));
+      });
+    }
 
     function hexToRgb01(hex) {
       var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#96731f');
@@ -916,16 +1037,6 @@ assign img = block.settings.product.featured_image
         : [0.588, 0.451, 0.122];
     }
 
-    // Lights a text silhouette the way a real engraved groove catches
-    // light, rather than the flat fill + two offset shadows Canvas 2D's
-    // own APIs can produce: a WebGL fragment shader treats the
-    // silhouette's alpha as a height map, derives a surface normal from
-    // its local slope at each pixel (the same bump-mapping technique
-    // games use), and shades it with actual diffuse + specular lighting.
-    // The visible difference is real — testing the two side by side, the
-    // WebGL version reads as genuinely carved metal, with a proper
-    // gradient and a bright specular edge, where the shadow-based version
-    // reads as flat text with a soft drop shadow under it.
     function renderEngravedLighting(silhouette, baseColorHex) {
       var w = silhouette.width;
       var h = silhouette.height;
@@ -1009,18 +1120,9 @@ assign img = block.settings.product.featured_image
       return out;
     }
 
-    // Composites the product photo and the current engraving into one
-    // flat PNG — a snapshot of exactly what the dialog is showing, at the
-    // photo's own full resolution rather than the smaller size the dialog
-    // displays it at.
     function captureEngravingSnapshot() {
       return new Promise(function (resolve) {
         if (!imageEl || !imageEl.naturalWidth) return resolve(null);
-        // This only ever displays as a small cart/checkout thumbnail
-        // (~150px in Dawn's own cart-drawer markup) — capturing at the
-        // photo's full resolution just made encoding and uploading slower
-        // for detail nobody will see. Capping the longer side at 500px is
-        // still 3x that display size, plenty for retina screens.
         var maxDimension = 500;
         var scale = Math.min(1, maxDimension / Math.max(imageEl.naturalWidth, imageEl.naturalHeight));
         var naturalW = Math.round(imageEl.naturalWidth * scale);
@@ -1045,9 +1147,6 @@ assign img = block.settings.product.featured_image
           if (lit) {
             ctx.drawImage(lit, 0, 0);
           } else {
-            // WebGL unavailable for some reason — a flat tint of the
-            // silhouette is still readable, just without the carved
-            // shading.
             ctx.drawImage(silhouette, 0, 0);
             ctx.globalCompositeOperation = 'source-in';
             ctx.fillStyle = currentBaseColorHex;
@@ -1055,10 +1154,6 @@ assign img = block.settings.product.featured_image
             ctx.globalCompositeOperation = 'source-over';
           }
 
-          // JPEG encodes noticeably faster than PNG for a photo like this
-          // (no transparency to preserve) and produces a smaller file,
-          // speeding up the upload step too; 0.88 quality is well past
-          // the point of any visible difference at thumbnail size.
           canvas.toBlob(function (blob) {
             resolve(blob);
           }, 'image/jpeg', 0.88);
@@ -1070,13 +1165,6 @@ assign img = block.settings.product.featured_image
       });
     }
 
-
-    // Shared by both triggers below: closing the dialog starts this early
-    // (usually finished well before "Add to cart" is ever clicked), and
-    // the click handler falls back to starting it itself only if nothing
-    // is already running — so there's never a duplicate, wasted capture.
-    // A timeout, and falling back to submitting anyway on any failure,
-    // means a slow or broken upload never actually blocks the purchase.
     function uploadEngravingImage() {
       var timeout = new Promise(function (resolve) {
         setTimeout(function () {
@@ -1100,27 +1188,28 @@ assign img = block.settings.product.featured_image
         .then(function (data) {
           if (data && data.url) {
             mirrorToCartForms('properties[_Engraved Preview]', data.url);
+            return data.url;
           }
+          return null;
         })
         .catch(function () {
-          // No image this time; the text/font properties still went
-          // through normally, so the order itself is unaffected.
+          return null;
         });
     }
 
     var pendingUpload = null;
 
+    // Only a fallback now: if the customer closes via the × button or the
+    // backdrop without ever using the popup's own "Add to Cart" (say,
+    // planning to use the page's regular button instead), this is what
+    // still gets the engraving image attached. When "Add to Cart" itself
+    // was used, pendingUpload is already set by that point, so this is a
+    // no-op rather than a second, redundant capture+upload.
     dialogEl.addEventListener('close', function () {
-      if (!input.value) return;
+      if (!input.value || pendingUpload) return;
       pendingUpload = uploadEngravingImage();
     });
 
-    // Catching the click on the button itself, in the capture phase
-    // (before the theme's own handler — Dawn's cart.js here — which
-    // listens in the normal bubble phase and would otherwise read the
-    // form before the image URL is attached), pauses just this one click
-    // until the upload — usually already finished by now — is done, then
-    // lets it through for real.
     document.querySelectorAll('form[action^="/cart/add"]').forEach(function (form) {
       var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
       buttons.forEach(function (button) {
@@ -1158,17 +1247,17 @@ assign img = block.settings.product.featured_image
 "settings": [
 { "type": "product", "id": "product", "label": "Product", "autofill": true },
 { "type": "text", "id": "button_label", "label": "Button label", "default": "Personalize" },
-{ "type": "text", "id": "confirm_label", "label": "Confirm button label", "default": "Done" },
+{ "type": "text", "id": "confirm_label", "label": "Confirm button label", "default": "Add to Cart" },
 { "type": "text", "id": "label", "label": "Dialog title / input label", "default": "Personalize with engraving" },
 { "type": "text", "id": "placeholder", "label": "Input placeholder", "default": "Type your engraving..." },
 { "type": "header", "content": "Personalize button style" },
-{ "type": "range", "id": "button_height", "label": "Button height (px)", "min": 30, "max": 50, "step": 1, "default": 44
-},
 { "type": "range", "id": "button_radius", "label": "Border radius (px)", "min": 0, "max": 40, "step": 1, "default": 8 },
 { "type": "color", "id": "button_bg", "label": "Background color", "default": "#ffffff" },
 { "type": "color", "id": "button_bg_hover", "label": "Background color (hover)", "default": "#16233d" },
 { "type": "color", "id": "button_text", "label": "Text color", "default": "#16233d" },
 { "type": "color", "id": "button_text_hover", "label": "Text color (hover)", "default": "#ffffff" },
+{ "type": "color", "id": "button_bg_filled", "label": "Background color (after typing)", "default": "#16233d" },
+{ "type": "color", "id": "button_text_filled", "label": "Text color (after typing)", "default": "#ffffff" },
 { "type": "header", "content": "Fonts" },
 { "type": "paragraph", "content": "Font 1 and Font 2 are uploaded once for the whole store in the app's Font settings page — this block just renders whichever one each product's engraving zone is set to use." }
 ]
