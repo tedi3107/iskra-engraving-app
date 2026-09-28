@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 client_id = "12e1a234e8febd1c03b7f262dbb9920e"
-name = "Jewelry-Engraving-test-app"
+name = "Jewelry-Engraving-App"
 application_url = "https://iskra-engraving-app.vercel.app/app"
 embedded = true
 

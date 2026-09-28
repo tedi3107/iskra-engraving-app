@@ -47,6 +47,7 @@ type Zone = {
   fontTwo: FontGeometry;
   fontChoice: "one" | "two";
   maxLength: number;
+  uppercaseOnly: boolean;
 };
 
 const DEFAULT_STRAIGHT_GEOMETRY: FontGeometry = {
@@ -74,6 +75,7 @@ const DEFAULT_ZONE: Zone = {
   fontTwo: DEFAULT_STRAIGHT_GEOMETRY,
   fontChoice: "one",
   maxLength: 24,
+  uppercaseOnly: false,
 };
 
 // Saved zones from before per-font positioning existed are a flat object
@@ -82,12 +84,16 @@ const DEFAULT_ZONE: Zone = {
 // same geometry into both slots reproduces the old behavior exactly.
 function migrateZone(raw: unknown): Zone {
   if (!raw || typeof raw !== "object") return DEFAULT_ZONE;
-  if ("fontOne" in raw) return raw as Zone;
-  const old = raw as FontGeometry & {
-    shape: Zone["shape"];
-    fontChoice: Zone["fontChoice"];
-    maxLength: number;
-  };
+  if ("fontOne" in raw) {
+    const existing = raw as Zone;
+    // Zones saved before uppercaseOnly existed won't have the field at
+    // all — undefined is falsy in the checks that use it, but coercing
+    // it explicitly here keeps the value a real boolean everywhere else
+    // (React state, the checkbox's checked prop) instead of leaving an
+    // undefined to quietly do the right thing by accident.
+    return { ...existing, uppercaseOnly: existing.uppercaseOnly ?? false };
+  }
+  const old = raw as FontGeometry & { shape: Zone["shape"]; fontChoice: Zone["fontChoice"]; maxLength: number };
   const geom: FontGeometry = { ...DEFAULT_STRAIGHT_GEOMETRY, ...old };
   return {
     shape: old.shape,
@@ -96,6 +102,7 @@ function migrateZone(raw: unknown): Zone {
     fontTwo: geom,
     fontChoice: old.fontChoice,
     maxLength: old.maxLength,
+    uppercaseOnly: false,
   };
 }
 
@@ -116,8 +123,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }`,
   );
   const shopFontsJson = await shopFontsResponse.json();
-  const shopFontsValue = shopFontsJson.data?.shop?.metafield?.value as
-    string | undefined;
+  const shopFontsValue = shopFontsJson.data?.shop?.metafield?.value as string | undefined;
   const shopFonts = shopFontsValue
     ? (JSON.parse(shopFontsValue) as {
         fontOne?: { familyName: string; url: string };
@@ -141,11 +147,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const json = await response.json();
   const value = json.data?.product?.metafield?.value as string | undefined;
-  return {
-    productId,
-    zone: value ? migrateZone(JSON.parse(value)) : null,
-    shopFonts,
-  };
+  return { productId, zone: value ? migrateZone(JSON.parse(value)) : null, shopFonts };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -200,10 +202,7 @@ const EMPTY_GEOMETRY: FontGeometry = {
   fontSize: DEFAULT_STRAIGHT_GEOMETRY.fontSize,
 };
 
-function toPixelGeometry(
-  saved: FontGeometry,
-  image: HTMLImageElement,
-): FontGeometry {
+function toPixelGeometry(saved: FontGeometry, image: HTMLImageElement): FontGeometry {
   return {
     x: image.width * (saved.x / 100),
     y: image.height * (saved.y / 100),
@@ -218,10 +217,7 @@ function toPixelGeometry(
   };
 }
 
-function toPercentGeometry(
-  pixel: FontGeometry,
-  image: HTMLImageElement,
-): FontGeometry {
+function toPercentGeometry(pixel: FontGeometry, image: HTMLImageElement): FontGeometry {
   return {
     x: +((pixel.x / image.width) * 100).toFixed(1),
     y: +((pixel.y / image.height) * 100).toFixed(1),
@@ -245,24 +241,24 @@ export default function PositionDesigner() {
 
   const [product, setProduct] = useState<PickedProduct | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [EngravingCanvas, setEngravingCanvas] = useState<ComponentType<
-    React.ComponentProps<typeof EngravingCanvasComponent>
-  > | null>(null);
+  const [EngravingCanvas, setEngravingCanvas] =
+    useState<ComponentType<React.ComponentProps<typeof EngravingCanvasComponent>> | null>(null);
 
   useEffect(() => {
     // react-konva touches the canvas/DOM directly, so it can only run in the
     // browser. Loading it here, inside an effect, keeps it out of the
     // server-side render entirely — a top-level import would make the dev
     // server try (and fail) to load it during SSR too.
-    import("../components/EngravingCanvas").then((mod) =>
-      setEngravingCanvas(() => mod.default),
-    );
+    import("../components/EngravingCanvas").then((mod) => setEngravingCanvas(() => mod.default));
   }, []);
 
   const [shape, setShape] = useState<Zone["shape"]>("straight");
   const [linked, setLinked] = useState(true);
   const [fontChoice, setFontChoice] = useState<"one" | "two">("one");
   const [maxLength, setMaxLength] = useState<number>(DEFAULT_ZONE.maxLength);
+  const [uppercaseOnly, setUppercaseOnly] = useState<boolean>(
+    DEFAULT_ZONE.uppercaseOnly,
+  );
   const [fontOneGeom, setFontOneGeom] = useState<FontGeometry>(EMPTY_GEOMETRY);
   const [fontTwoGeom, setFontTwoGeom] = useState<FontGeometry>(EMPTY_GEOMETRY);
 
@@ -293,9 +289,7 @@ export default function PositionDesigner() {
     setProduct({ id: picked.id, title: picked.title, imageUrl });
     setImage(null);
     setPreviewText(DEFAULT_PREVIEW_TEXT);
-    zoneFetcher.load(
-      `/app/position-designer?productId=${encodeURIComponent(picked.id)}`,
-    );
+    zoneFetcher.load(`/app/position-designer?productId=${encodeURIComponent(picked.id)}`);
 
     if (!imageUrl) return;
 
@@ -358,10 +352,7 @@ export default function PositionDesigner() {
     // trusting that blindly would load a box/circle with nothing visible to
     // grab. Treating it as if nothing had been saved falls back to sane
     // defaults instead of reproducing the old bug forever.
-    if (
-      isDegenerate(source.shape, source.fontOne) ||
-      isDegenerate(source.shape, source.fontTwo)
-    ) {
+    if (isDegenerate(source.shape, source.fontOne) || isDegenerate(source.shape, source.fontTwo)) {
       source = DEFAULT_ZONE;
     }
 
@@ -377,6 +368,8 @@ export default function PositionDesigner() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMaxLength(source.maxLength);
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUppercaseOnly(source.uppercaseOnly);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFontOneGeom(toPixelGeometry(source.fontOne, image));
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFontTwoGeom(toPixelGeometry(source.fontTwo, image));
@@ -391,16 +384,10 @@ export default function PositionDesigner() {
   const handleShapeChange = (newShape: Zone["shape"]) => {
     setShape(newShape);
     if (!image) return;
-    const needsDefault = (g: FontGeometry) =>
-      newShape === "curved" ? g.radius === 0 : g.width === 0;
+    const needsDefault = (g: FontGeometry) => (newShape === "curved" ? g.radius === 0 : g.width === 0);
     const withDefault = (g: FontGeometry): FontGeometry =>
       needsDefault(g)
-        ? toPixelGeometry(
-            newShape === "curved"
-              ? DEFAULT_CURVED_GEOMETRY
-              : DEFAULT_STRAIGHT_GEOMETRY,
-            image,
-          )
+        ? toPixelGeometry(newShape === "curved" ? DEFAULT_CURVED_GEOMETRY : DEFAULT_STRAIGHT_GEOMETRY, image)
         : g;
     updateGeom(withDefault);
   };
@@ -471,6 +458,7 @@ export default function PositionDesigner() {
         fontTwo: toPercentGeometry(fontTwoGeom, image),
         fontChoice,
         maxLength,
+        uppercaseOnly,
       }
     : null;
 
@@ -486,11 +474,16 @@ export default function PositionDesigner() {
   const scale = image ? displayWidth / image.width : 1;
   const displayHeight = image ? image.height * scale : 0;
   const isSaving = fetcher.state !== "idle";
-  const currentZoneGeom = zone
-    ? fontChoice === "one"
-      ? zone.fontOne
-      : zone.fontTwo
-    : null;
+  const currentZoneGeom = zone ? (fontChoice === "one" ? zone.fontOne : zone.fontTwo) : null;
+  // The input's own maxLength attribute only stops new typing from going
+  // past the limit — it doesn't retroactively trim a value that arrived any
+  // other way, like the "Your Text" default (9 characters) landing in a
+  // field whose max is, say, 1 for a monogram-style product, or the
+  // merchant dragging the Max characters slider down below what's already
+  // typed. Deriving the displayed value fresh each render (rather than
+  // storing a separately-clamped copy) keeps it correct in both cases
+  // automatically.
+  const displayPreviewText = previewText.slice(0, maxLength);
 
   return (
     <s-page heading="Engraving position designer">
@@ -501,8 +494,8 @@ export default function PositionDesigner() {
       <s-section heading={product ? product.title : "No product selected"}>
         {!product && (
           <s-paragraph>
-            Pick a product to place its engraving zone. The area you set here is
-            where the customer&apos;s text will appear on the storefront.
+            Pick a product to place its engraving zone. The area you set here
+            is where the customer&apos;s text will appear on the storefront.
           </s-paragraph>
         )}
 
@@ -514,9 +507,7 @@ export default function PositionDesigner() {
 
         {product && image && zoneReady && (
           <s-stack direction="block" gap="base">
-            <label
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <input
                 type="checkbox"
                 checked={linked}
@@ -538,9 +529,7 @@ export default function PositionDesigner() {
               <span style={{ fontWeight: 500 }}>Shape</span>
               <select
                 value={shape}
-                onChange={(e) =>
-                  handleShapeChange(e.target.value as Zone["shape"])
-                }
+                onChange={(e) => handleShapeChange(e.target.value as Zone["shape"])}
                 style={{ gridColumn: "2 / span 2" }}
               >
                 <option value="straight">Straight (box)</option>
@@ -561,24 +550,15 @@ export default function PositionDesigner() {
                       ? zoneFetcher.data?.shopFonts?.fontOne
                       : zoneFetcher.data?.shopFonts?.fontTwo;
                   return (
-                    <option
-                      key={opt.value}
-                      value={opt.value}
-                      style={{ fontFamily: opt.previewFamily }}
-                    >
-                      {uploaded
-                        ? `${opt.label} — ${uploaded.familyName}`
-                        : opt.label}
+                    <option key={opt.value} value={opt.value} style={{ fontFamily: opt.previewFamily }}>
+                      {uploaded ? `${opt.label} — ${uploaded.familyName}` : opt.label}
                     </option>
                   );
                 })}
               </select>
 
               <span style={{ fontWeight: 500 }}>
-                Font size{" "}
-                <small>
-                  (% of {shape === "straight" ? "box height" : "radius"})
-                </small>
+                Font size <small>(% of {shape === "straight" ? "box height" : "radius"})</small>
               </span>
               <input
                 type="range"
@@ -586,12 +566,7 @@ export default function PositionDesigner() {
                 max={100}
                 step={1}
                 value={currentGeom.fontSize}
-                onChange={(e) =>
-                  updateGeom((g) => ({
-                    ...g,
-                    fontSize: Number(e.target.value),
-                  }))
-                }
+                onChange={(e) => updateGeom((g) => ({ ...g, fontSize: Number(e.target.value) }))}
               />
               <span>{currentGeom.fontSize}%</span>
 
@@ -606,6 +581,23 @@ export default function PositionDesigner() {
               />
               <span>{maxLength}</span>
 
+              <span style={{ fontWeight: 500 }}>Uppercase only</span>
+              <label
+                style={{
+                  gridColumn: "2 / span 2",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={uppercaseOnly}
+                  onChange={(e) => setUppercaseOnly(e.target.checked)}
+                />
+                Force customer input to capital letters
+              </label>
+
               {shape === "curved" && (
                 <>
                   <span style={{ fontWeight: 500 }}>Start angle</span>
@@ -616,10 +608,7 @@ export default function PositionDesigner() {
                     step={1}
                     value={currentGeom.startAngle}
                     onChange={(e) =>
-                      updateGeom((g) => ({
-                        ...g,
-                        startAngle: Number(e.target.value),
-                      }))
+                      updateGeom((g) => ({ ...g, startAngle: Number(e.target.value) }))
                     }
                   />
                   <span>{Math.round(currentGeom.startAngle)}°</span>
@@ -632,10 +621,7 @@ export default function PositionDesigner() {
                     step={1}
                     value={currentGeom.arcLength}
                     onChange={(e) =>
-                      updateGeom((g) => ({
-                        ...g,
-                        arcLength: Number(e.target.value),
-                      }))
+                      updateGeom((g) => ({ ...g, arcLength: Number(e.target.value) }))
                     }
                   />
                   <span>{Math.round(currentGeom.arcLength)}°</span>
@@ -646,35 +632,25 @@ export default function PositionDesigner() {
             {!linked && (
               <s-paragraph>
                 <s-text tone="neutral">
-                  Positioning{" "}
-                  {FONT_CHOICES.find((f) => f.value === fontChoice)?.label}{" "}
-                  right now — switch the dropdown above to position the other
-                  font.
+                  Positioning {FONT_CHOICES.find((f) => f.value === fontChoice)?.label} right now —
+                  switch the dropdown above to position the other font.
                 </s-text>
               </s-paragraph>
             )}
 
             <label>
-              Preview text (not saved — just for you to see the font/curve while
-              placing it)
+              Preview text (not saved — just for you to see the font/curve while placing it)
               <input
                 type="text"
-                value={previewText}
+                value={displayPreviewText}
                 maxLength={maxLength}
                 onChange={(e) => setPreviewText(e.target.value)}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  maxWidth: 320,
-                  marginTop: "0.25rem",
-                }}
+                style={{ display: "block", width: "100%", maxWidth: 320, marginTop: "0.25rem" }}
                 placeholder="Type sample text…"
               />
             </label>
 
-            <div
-              style={{ border: "1px solid #e1e1e1", display: "inline-block" }}
-            >
+            <div style={{ border: "1px solid #e1e1e1", display: "inline-block" }}>
               {EngravingCanvas ? (
                 <EngravingCanvas
                   image={image}
@@ -683,13 +659,12 @@ export default function PositionDesigner() {
                   displayWidth={displayWidth}
                   displayHeight={displayHeight}
                   scale={scale}
-                  previewText={previewText}
+                  previewText={displayPreviewText}
                   fontFamily={
                     (fontChoice === "one"
                       ? zoneFetcher.data?.shopFonts?.fontOne?.familyName
                       : zoneFetcher.data?.shopFonts?.fontTwo?.familyName) ??
-                    FONT_CHOICES.find((f) => f.value === fontChoice)
-                      ?.previewFamily ??
+                    FONT_CHOICES.find((f) => f.value === fontChoice)?.previewFamily ??
                     FONT_CHOICES[0].previewFamily
                   }
                   fontSize={currentGeom.fontSize}
@@ -734,8 +709,8 @@ export default function PositionDesigner() {
         </s-paragraph>
         <s-paragraph>
           Curved mode is for rings: the circle you position is the ring&apos;s
-          band, and the customer&apos;s text follows its curve. Type sample text
-          above to preview the actual curve while you place it.
+          band, and the customer&apos;s text follows its curve. Type sample
+          text above to preview the actual curve while you place it.
         </s-paragraph>
         <s-paragraph>
           Font 1 and Font 2 are uploaded once, store-wide, on the app&apos;s{" "}
