@@ -1,7 +1,7 @@
 {% liquid
 assign shop_fonts = shop.metafields.engraving.fonts.value
-assign zone = block.settings.product.metafields.engraving.zone.value
-assign img = block.settings.product.featured_image
+assign zone = product.metafields.engraving.zone.value
+assign img = product.featured_image
 %}
 
 {% if zone and img %}
@@ -160,7 +160,7 @@ assign img = block.settings.product.featured_image
 
     <script type="application/json" id="EngravingVariantImages-{{ block.id }}">
       {
-        {% for variant in block.settings.product.variants %}
+        {% for variant in product.variants %}
           {% assign v_img = variant.featured_image | default: img %}
           "{{ variant.id }}": {{ v_img | image_url: width: 800 | json }}{% unless forloop.last %},{% endunless %}
         {% endfor %}
@@ -197,7 +197,97 @@ assign img = block.settings.product.featured_image
     </button>
 
     <div class="engraving-preview__loading" id="EngravingLoading-{{ block.id }}" aria-live="polite" hidden>
-      <span class="engraving-preview__spinner" aria-hidden="true"></span>
+      <svg class="engraving-preview__loading-icon" viewBox="0 0 810 817.92" aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="loading-a-{{ block.id }}">
+            <path d="M64.086 61.469H745.77V748H64.086Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-b-{{ block.id }}">
+            <path d="M87.41 451.563h61.492v98.988H87.41Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-c-{{ block.id }}">
+            <path d="M149 421.457h30.707v49.496H149Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-d-{{ block.id }}">
+            <path d="M179.734 531.3h30.746v49.497h-30.746Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-e-{{ block.id }}">
+            <path d="M651.492 493.098h61.496v98.988h-61.496Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-g-{{ block.id }}">
+            <path d="M.54.098h61.448v98.988H.54Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-f-{{ block.id }}">
+            <path d="M0 0h62v100H0z"></path>
+          </clipPath>
+          <clipPath id="loading-h-{{ block.id }}">
+            <path d="M632.703 404.96h30.746v49.497h-30.746Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-j-{{ block.id }}">
+            <path d="M.727 1h30.722v49.457H.727Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-i-{{ block.id }}">
+            <path d="M0 0h32v51H0z"></path>
+          </clipPath>
+          <clipPath id="loading-k-{{ block.id }}">
+            <path d="M601.93 476.379h30.746v49.496H601.93Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-m-{{ block.id }}">
+            <path d="M1 .379h30.676v49.496H1Zm0 0"></path>
+          </clipPath>
+          <clipPath id="loading-l-{{ block.id }}">
+            <path d="M0 0h32v50H0z"></path>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#loading-a-{{ block.id }})" class="engraving-icon-body">
+          <path fill="currentColor" fill-rule="evenodd"
+            d="M414.61 435.863v202.551l41.726-66.488c2.793-4.442 8.664-5.774 13.105-2.98 4.438 2.792 5.77 8.663 2.977 13.1l-46.797 74.567 129.387-31.894c5.097-1.254 10.25 1.86 11.504 6.957s-1.864 10.25-6.961 11.504l-76.098 18.761h253.024c5.265 0 9.53 4.27 9.53 9.532v66.906c0 5.262-4.265 9.527-9.53 9.527H73.684c-5.262 0-9.532-4.265-9.532-9.527v-66.906c0-5.262 4.27-9.532 9.532-9.532h253.05l-76.12-18.761c-5.094-1.254-8.212-6.407-6.958-11.504 1.254-5.098 6.406-8.211 11.504-6.957l129.38 31.894-46.794-74.566c-2.789-4.438-1.46-10.309 2.98-13.102 4.442-2.793 10.313-1.46 13.102 2.98l41.723 66.485V435.863h-6.793v-.043a9.48 9.48 0 0 1-8.227-4.761l-48.484-83.977a33.48 33.48 0 0 1-16.676-9.086c-6.058-6.062-9.82-14.43-9.82-23.637s3.762-17.574 9.82-23.632c6.055-6.055 14.426-9.82 23.633-9.82h.898v-68.09h-24.824c-5.262 0-9.527-4.27-9.527-9.532V71.375a9.527 9.527 0 0 1 9.527-9.527h180.008c5.262 0 9.531 4.265 9.531 9.527v131.91c0 5.262-4.27 9.531-9.531 9.531h-24.82v68.09h.894c9.207 0 17.578 3.766 23.633 9.82 6.059 6.06 9.824 14.426 9.824 23.633s-3.765 17.575-9.824 23.637c-4.484 4.484-10.242 7.715-16.672 9.086l-31.23 54.129-16.922 29.305a9.53 9.53 0 0 1-8.563 5.347Zm185.468 197.422 29.336-7.164c5.094-1.23 8.23-6.371 7-11.465-1.234-5.097-6.371-8.23-11.469-7l-29.336 7.164c-5.097 1.23-8.23 6.371-7 11.465 1.235 5.098 6.371 8.23 11.47 7M83.211 681v47.848h643.738V681zM415.93 416.805l39.851-68.992H354.38l39.832 68.992Zm-76.926-88.051h132.34c3.879-.05 7.41-1.664 9.976-4.23 2.614-2.614 4.239-6.215 4.239-10.165s-1.625-7.546-4.239-10.16c-2.61-2.61-6.21-4.234-10.16-4.234H339.004c-3.95 0-7.55 1.625-10.16 4.234-2.614 2.613-4.235 6.211-4.235 10.16 0 3.95 1.621 7.551 4.235 10.164 2.566 2.567 6.097 4.18 9.976 4.23Zm19.957-47.848h92.242v-68.09h-92.242Zm-34.352-87.148h160.95V80.906h-160.95Zm165.02 431.387 92.465-66.598c4.25-3.063 5.218-8.996 2.156-13.25-3.059-4.254-8.996-5.223-13.25-2.164l-92.46 66.597c-4.259 3.063-5.224 8.997-2.165 13.254 3.063 4.254 8.996 5.22 13.254 2.16m-275.07-10.325-29.336-7.164c-5.098-1.23-10.235 1.903-11.47 7-1.23 5.094 1.903 10.235 7 11.465l29.337 7.164c5.097 1.23 10.234-1.902 11.465-7 1.234-5.094-1.903-10.234-6.996-11.465m117.07-5.09-92.465-66.597c-4.25-3.059-10.187-2.09-13.25 2.164-3.059 4.254-2.094 10.187 2.16 13.25l92.465 66.598c4.254 3.058 10.191 2.093 13.254-2.16 3.059-4.258 2.09-10.192-2.164-13.255m0 0">
+          </path>
+        </g>
+        <g clip-path="url(#loading-b-{{ block.id }})" class="engraving-icon-spark engraving-icon-spark-1">
+          <path fill="currentColor"
+            d="M116.691 452.875c-9.113 31.895-23.308 43.898-28.3 47.313-.79.527-.79 1.578 0 2.105 4.906 3.328 19.097 15.418 28.3 47.312.348 1.227 2.102 1.227 2.454 0 8.933-31.894 23.656-43.898 28.824-47.312a1.31 1.31 0 0 0 0-2.191c-5.168-3.329-19.89-15.422-28.824-47.313-.352-1.226-2.106-1.226-2.454.086m0 0">
+          </path>
+        </g>
+        <g clip-path="url(#loading-c-{{ block.id }})" class="engraving-icon-spark engraving-icon-spark-2">
+          <path fill="currentColor"
+            d="M163.598 422.117c-4.555 15.945-11.653 21.945-14.149 23.656a.614.614 0 0 0 0 1.051c2.453 1.664 9.551 7.711 14.149 23.656.175.614 1.054.614 1.226 0 4.469-15.945 11.828-21.949 14.414-23.656a.657.657 0 0 0 0-1.097c-2.586-1.664-9.945-7.707-14.414-23.657-.172-.613-1.05-.613-1.226.047m0 0">
+          </path>
+        </g>
+        <g clip-path="url(#loading-d-{{ block.id }})" class="engraving-icon-spark engraving-icon-spark-3">
+          <path fill="currentColor"
+            d="M194.375 531.957c-4.559 15.945-11.652 21.95-14.152 23.656a.614.614 0 0 0 0 1.051c2.453 1.668 9.55 7.711 14.152 23.66.176.614 1.05.614 1.227 0 4.468-15.949 11.828-21.949 14.414-23.66a.657.657 0 0 0 0-1.094c-2.586-1.664-9.946-7.71-14.414-23.656-.176-.613-1.051-.613-1.227.043m0 0">
+          </path>
+        </g>
+        <g clip-path="url(#loading-e-{{ block.id }})" class="engraving-icon-spark engraving-icon-spark-4">
+          <g clip-path="url(#loading-f-{{ block.id }})" transform="translate(651 493)">
+            <g clip-path="url(#loading-g-{{ block.id }})">
+              <path fill="currentColor"
+                d="M32.754 1.41c9.113 31.895 23.305 43.899 28.3 47.313.79.527.79 1.578 0 2.105-4.906 3.328-19.1 15.418-28.3 47.313-.352 1.226-2.106 1.226-2.453 0C21.363 66.246 6.645 54.246 1.473 50.828a1.31 1.31 0 0 1 0-2.191C6.645 45.309 21.363 33.215 30.3 1.324c.347-1.226 2.101-1.226 2.453.086m0 0">
+              </path>
+            </g>
+          </g>
+        </g>
+        <g clip-path="url(#loading-h-{{ block.id }})" class="engraving-icon-spark engraving-icon-spark-5">
+          <g clip-path="url(#loading-i-{{ block.id }})" transform="translate(632 404)">
+            <g clip-path="url(#loading-j-{{ block.id }})">
+              <path fill="#142a43"
+                d="M16.832 1.617c4.559 15.946 11.656 21.95 14.152 23.656.395.266.395.79 0 1.051-2.453 1.668-9.55 7.711-14.152 23.66-.172.614-1.05.614-1.227 0-4.464-15.949-11.828-21.949-14.41-23.66a.653.653 0 0 1 0-1.094c2.582-1.664 9.946-7.71 14.41-23.656.176-.613 1.055-.613 1.227.043m0 0">
+              </path>
+            </g>
+          </g>
+        </g>
+        <g clip-path="url(#loading-k-{{ block.id }})" class="engraving-icon-spark engraving-icon-spark-1">
+          <g clip-path="url(#loading-l-{{ block.id }})" transform="translate(601 476)">
+            <g clip-path="url(#loading-m-{{ block.id }})">
+              <path fill="#142a43"
+                d="M17.059 1.035c4.554 15.95 11.652 21.95 14.152 23.656.394.266.394.79 0 1.055-2.453 1.664-9.55 7.707-14.152 23.656-.176.614-1.051.614-1.227 0C11.363 33.453 4.004 27.453 1.418 25.746a.657.657 0 0 1 0-1.098c2.586-1.664 9.945-7.71 14.414-23.656.176-.613 1.05-.613 1.227.043m0 0">
+              </path>
+            </g>
+          </g>
+        </g>
+      </svg>
       <span>Adding to cart…</span>
     </div>
 
@@ -356,18 +446,67 @@ assign img = block.settings.product.featured_image
     z-index: 1;
   }
 
-  .engraving-preview__spinner {
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2.5px solid var(--engrave-border);
-    border-top-color: var(--engrave-navy);
-    border-radius: 50%;
-    animation: engraving-spin 0.7s linear infinite;
+  .engraving-preview__loading-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--engrave-navy);
   }
 
-  @keyframes engraving-spin {
-    to {
-      transform: rotate(360deg);
+  .engraving-icon-body {
+    /* The tool itself stays put — only the sparks around it animate,
+       same as a real engraving tool doesn't visibly move while it's the
+       sparks flying off the tip that show it's actively cutting. */
+  }
+
+  .engraving-icon-spark {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: engraving-spark-fly 1.2s ease-out infinite;
+  }
+
+  /* Each spark flies its own small distance and direction, roughly
+     outward from wherever it sits on the icon, rather than all five
+     moving identically — closer to how real sparks scatter unevenly off
+     a tool than one uniform motion repeated five times would look. The
+     differing delays (below) then keep them from all flying at once. */
+  .engraving-icon-spark-1 {
+    animation-delay: 0s;
+    --fly-x: 22px;
+    --fly-y: -14px;
+  }
+  .engraving-icon-spark-2 {
+    animation-delay: 0.2s;
+    --fly-x: -18px;
+    --fly-y: -20px;
+  }
+  .engraving-icon-spark-3 {
+    animation-delay: 0.4s;
+    --fly-x: 16px;
+    --fly-y: 22px;
+  }
+  .engraving-icon-spark-4 {
+    animation-delay: 0.6s;
+    --fly-x: -22px;
+    --fly-y: 12px;
+  }
+  .engraving-icon-spark-5 {
+    animation-delay: 0.8s;
+    --fly-x: 14px;
+    --fly-y: -20px;
+  }
+
+  @keyframes engraving-spark-fly {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.5);
+    }
+    35% {
+      opacity: 1;
+      transform: translate(calc(var(--fly-x) * 0.4), calc(var(--fly-y) * 0.4)) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--fly-x), var(--fly-y)) scale(0.4);
     }
   }
 
@@ -514,10 +653,38 @@ assign img = block.settings.product.featured_image
       return currentFontFamily ? "'" + currentFontFamily + "', " + currentFontFallback : currentFontFallback;
     }
 
-    function drawEngravingSilhouette(ctx, w, h) {
+    function drawEngravingSilhouette(ctx, w, h, crop) {
       var text = input.value;
       if (!text) return;
       var fontSizePercent = geomAttr('font-size');
+
+      // Zone coordinates are percentages of the FULL source photo. That
+      // maps directly onto this canvas when nothing has transformed the
+      // image (crop is undefined) — but a themed display box often uses
+      // a different aspect ratio than the source, needing CSS to make it
+      // fit. object-fit: cover scales both axes by the same factor and
+      // crops whatever overflows; object-fit: fill (seen on this theme's
+      // own zoom view) instead stretches each axis independently to
+      // match the box exactly, cropping nothing. crop (built in
+      // renderToTarget from the target's own computed object-fit) always
+      // carries a scaleX/scaleY pair — equal for cover, independent for
+      // fill — plus how much of each axis a cover-style crop removed (0
+      // for fill, since it never crops). Applying the wrong one of these
+      // two models is exactly what put the zoomed engraving in the wrong
+      // spot: cover's crop-offset math doesn't apply to a fill image, so
+      // subtracting an offset that shouldn't exist there shifted it.
+      function pxX(percent) {
+        return crop ? (percent / 100) * crop.naturalW * crop.scaleX - crop.offsetX : (percent / 100) * w;
+      }
+      function pxY(percent) {
+        return crop ? (percent / 100) * crop.naturalH * crop.scaleY - crop.offsetY : (percent / 100) * h;
+      }
+      function lenX(percent) {
+        return crop ? (percent / 100) * crop.naturalW * crop.scaleX : (percent / 100) * w;
+      }
+      function lenY(percent) {
+        return crop ? (percent / 100) * crop.naturalH * crop.scaleY : (percent / 100) * h;
+      }
 
       ctx.save();
       ctx.fillStyle = '#fff';
@@ -529,14 +696,14 @@ assign img = block.settings.product.featured_image
         var zy = geomAttr('y');
         var zw = geomAttr('width');
         var zh = geomAttr('height');
-        var fontPx = (fontSizePercent / 100) * ((zh / 100) * h);
+        var fontPx = (fontSizePercent / 100) * lenY(zh);
         ctx.font = fontPx + 'px ' + currentFontFamilyCss();
-        ctx.fillText(text, ((zx + zw / 2) / 100) * w, ((zy + zh / 2) / 100) * h);
+        ctx.fillText(text, pxX(zx + zw / 2), pxY(zy + zh / 2));
       } else {
-        var r = (geomAttr('radius') / 100) * w;
+        var r = lenX(geomAttr('radius'));
         var fontPx2 = (fontSizePercent / 100) * r;
-        var cx = (geomAttr('center-x') / 100) * w;
-        var cy = (geomAttr('center-y') / 100) * h;
+        var cx = pxX(geomAttr('center-x'));
+        var cy = pxY(geomAttr('center-y'));
         var startDeg = geomAttr('start-angle');
         var arcDeg = geomAttr('arc-length');
         var midAngle = ((startDeg + arcDeg / 2) % 360 + 360) % 360;
@@ -572,7 +739,7 @@ assign img = block.settings.product.featured_image
       ctx.restore();
     }
 
-    function renderToCanvas(canvasEl, w, h) {
+    function renderToCanvas(canvasEl, w, h, crop) {
       if (!canvasEl || !w || !h) return;
       canvasEl.width = w;
       canvasEl.height = h;
@@ -583,7 +750,7 @@ assign img = block.settings.product.featured_image
       var silhouette = document.createElement('canvas');
       silhouette.width = w;
       silhouette.height = h;
-      drawEngravingSilhouette(silhouette.getContext('2d'), w, h);
+      drawEngravingSilhouette(silhouette.getContext('2d'), w, h, crop);
 
       var lit = renderEngravedLighting(silhouette, currentBaseColorHex);
       if (lit) {
@@ -606,33 +773,135 @@ assign img = block.settings.product.featured_image
 
     var ownBlock = stage.closest('.engraving-preview');
     var sectionEl = ownBlock ? ownBlock.closest('[id^="shopify-section-"]') : null;
-    var externalImage = document.querySelector('[data-engraving-target]');
-    if (!externalImage && sectionEl) {
+    var firstExternalImage = document.querySelector('[data-engraving-target]');
+    if (!firstExternalImage && sectionEl) {
       var candidates = sectionEl.querySelectorAll('img');
       for (var i = 0; i < candidates.length; i++) {
         if (!candidates[i].closest('.engraving-preview')) {
-          externalImage = candidates[i];
+          firstExternalImage = candidates[i];
           break;
         }
       }
     }
 
-    var externalCanvas = null;
-    if (externalImage) {
-      externalCanvas = document.createElement('canvas');
-      externalCanvas.className = 'engraving-preview__canvas';
-      externalCanvas.style.position = 'absolute';
-      externalCanvas.style.top = '0';
-      externalCanvas.style.left = '0';
-      externalCanvas.style.width = '100%';
-      externalCanvas.style.height = '100%';
-      externalCanvas.style.pointerEvents = 'none';
-      externalImage.parentNode.appendChild(externalCanvas);
+    // The path before Shopify's own size/version query string identifies
+    // the underlying photo regardless of which size it's requested at —
+    // used below to recognize a zoom/lightbox copy of this same photo as
+    // "the same image" even though it's a different <img> element, at a
+    // different (usually much larger) size, than the one on the page at
+    // load time.
+    function imageIdentity(src) {
+      return src ? src.split('?')[0] : '';
+    }
+    var trackedIdentity = firstExternalImage ? imageIdentity(firstExternalImage.src) : null;
+
+    // Every <img> currently known to show this same product photo, each
+    // paired with its own overlay canvas — not just the one visible when
+    // the page loads. Zoom/lightbox views typically clone the photo into
+    // a new, larger <img> inserted well after this script's initial run,
+    // so a single fixed reference wouldn't reach it; each is tracked and
+    // rendered to independently, since a zoomed copy is usually a
+    // completely separate element from the small one on the page itself.
+    var externalTargets = [];
+
+    function attachOverlay(img) {
+      for (var t = 0; t < externalTargets.length; t++) {
+        if (externalTargets[t].img === img) return;
+      }
+      var canvas = document.createElement('canvas');
+      canvas.className = 'engraving-preview__canvas';
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.pointerEvents = 'none';
+      // A zoom view often positions its own <img> inside a container
+      // that isn't itself position:relative — an absolutely-positioned
+      // canvas would then place itself against some further ancestor
+      // instead of directly over this image, so this guarantees the
+      // immediate parent is a valid containing block first.
+      var parent = img.parentNode;
+      var parentPosition = parent && window.getComputedStyle(parent).position;
+      if (parent && (parentPosition === 'static' || !parentPosition)) {
+        parent.style.position = 'relative';
+      }
+      if (parent) parent.appendChild(canvas);
+      externalTargets.push({ img: img, canvas: canvas });
+      renderToTarget(externalTargets[externalTargets.length - 1]);
+    }
+
+    if (firstExternalImage) attachOverlay(firstExternalImage);
+
+    // Covers zoom/lightbox implementations that insert their larger copy
+    // of the photo anywhere in the document once triggered, rather than
+    // reusing the original <img> in place — this is what notices that
+    // new element appearing and gives it the same overlay treatment.
+    if (trackedIdentity && window.MutationObserver) {
+      var zoomObserver = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          mutation.addedNodes.forEach(function (node) {
+            if (node.nodeType !== 1) return;
+            var found = node.matches && node.matches('img') ? [node] : node.querySelectorAll
+              ? Array.prototype.slice.call(node.querySelectorAll('img'))
+              : [];
+            found.forEach(function (candidate) {
+              if (candidate.closest('.engraving-preview')) return;
+              if (imageIdentity(candidate.src) !== trackedIdentity) return;
+              if (candidate.complete) {
+                attachOverlay(candidate);
+              } else {
+                candidate.addEventListener('load', function () {
+                  attachOverlay(candidate);
+                }, { once: true });
+              }
+            });
+          });
+        });
+      });
+      zoomObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function renderToTarget(target) {
+      var crop = null;
+      var dW = target.img.clientWidth;
+      var dH = target.img.clientHeight;
+      if (target.img.naturalWidth && target.img.naturalHeight && dW && dH) {
+        var naturalW = target.img.naturalWidth;
+        var naturalH = target.img.naturalHeight;
+        // fill stretches each axis independently to match the box —
+        // nothing is cropped, so there's no offset to compensate for.
+        // Anything else (cover, or no object-fit at all, the most common
+        // case) is treated as cover: one uniform scale sized to overflow
+        // the box on the shorter axis, with the resulting excess on the
+        // other axis being what gets cropped away and needs subtracting.
+        var fit = window.getComputedStyle(target.img).objectFit;
+        if (fit === 'fill') {
+          crop = {
+            naturalW: naturalW,
+            naturalH: naturalH,
+            scaleX: dW / naturalW,
+            scaleY: dH / naturalH,
+            offsetX: 0,
+            offsetY: 0,
+          };
+        } else {
+          var scale = Math.max(dW / naturalW, dH / naturalH);
+          crop = {
+            naturalW: naturalW,
+            naturalH: naturalH,
+            scaleX: scale,
+            scaleY: scale,
+            offsetX: (naturalW * scale - dW) / 2,
+            offsetY: (naturalH * scale - dH) / 2,
+          };
+        }
+      }
+      renderToCanvas(target.canvas, dW, dH, crop);
     }
 
     function renderExternal() {
-      if (!externalImage || !externalCanvas) return;
-      renderToCanvas(externalCanvas, externalImage.clientWidth, externalImage.clientHeight);
+      externalTargets.forEach(renderToTarget);
     }
 
     function renderAllPreviews() {
@@ -754,8 +1023,8 @@ assign img = block.settings.product.featured_image
       renderInternal();
       sampleAndApplyColor(imageEl);
     });
-    if (externalImage) {
-      whenImageReady(externalImage, renderExternal);
+    if (firstExternalImage) {
+      whenImageReady(firstExternalImage, renderExternal);
     }
     window.addEventListener('resize', renderAllPreviews);
 
@@ -1245,7 +1514,6 @@ assign img = block.settings.product.featured_image
 "name": "Engraving preview",
 "target": "section",
 "settings": [
-{ "type": "product", "id": "product", "label": "Product", "autofill": true },
 { "type": "text", "id": "button_label", "label": "Button label", "default": "Personalize" },
 { "type": "text", "id": "confirm_label", "label": "Confirm button label", "default": "Add to Cart" },
 { "type": "text", "id": "label", "label": "Dialog title / input label", "default": "Personalize with engraving" },
