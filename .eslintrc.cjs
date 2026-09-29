@@ -76,6 +76,15 @@ module.exports = {
       ],
     },
 
+    // The JavaScript branch is generated from TypeScript and no longer has
+    // compile-time prop types for react/prop-types to inspect.
+    {
+      files: ["**/*.jsx"],
+      rules: {
+        "react/prop-types": "off",
+      },
+    },
+
     // Node
     {
       files: [

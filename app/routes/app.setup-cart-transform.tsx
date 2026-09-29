@@ -61,8 +61,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
     const json = await response.json();
     const errors = json.data?.cartTransformDelete?.userErrors as
-      | { field: string[]; message: string }[]
-      | undefined;
+      { field: string[]; message: string }[] | undefined;
     if (errors?.length) {
       return { error: errors[0].message, intent: "deactivate" as const };
     }
@@ -90,11 +89,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   );
   const json = await response.json();
   const errors = json.data?.cartTransformCreate?.userErrors as
-    | { field: string[]; message: string }[]
-    | undefined;
+    { field: string[]; message: string }[] | undefined;
   const cartTransformId = json.data?.cartTransformCreate?.cartTransform?.id as
-    | string
-    | undefined;
+    string | undefined;
 
   if (errors?.length) {
     return { error: errors[0].message, intent: "activate" as const };
@@ -137,9 +134,9 @@ export default function SetupCartTransform() {
     <s-page heading="Cart Transform setup">
       <s-section heading="Cart transform for this store">
         <s-paragraph>
-          This has to be run once per store install — it's what lets the
-          engraved preview image show up at checkout. It's safe to open this
-          page again later; it won't create a duplicate if one already
+          This has to be run once per store install — it&apos;s what lets the
+          engraved preview image show up at checkout. It&apos;s safe to open
+          this page again later; it won&apos;t create a duplicate if one already
           exists.
         </s-paragraph>
 
@@ -245,14 +242,14 @@ export default function SetupCartTransform() {
 
       <s-section heading="Also needed: cart drawer & cart page (manual, per theme)">
         <s-paragraph>
-          The cart transform above only affects checkout. The cart page and
-          side cart drawer are rendered by the theme itself, so each new
-          store's theme needs this same small edit — Cart Transform can&apos;t
-          reach those templates.
+          The cart transform above only affects checkout. The cart page and side
+          cart drawer are rendered by the theme itself, so each new store&apos;s
+          theme needs this same small edit — Cart Transform can&apos;t reach
+          those templates.
         </s-paragraph>
         <s-paragraph>
-          In the theme, find wherever a cart line item&apos;s image is
-          rendered — usually a section or snippet named something like{" "}
+          In the theme, find wherever a cart line item&apos;s image is rendered
+          — usually a section or snippet named something like{" "}
           <code>main-cart-items.liquid</code> and{" "}
           <code>cart-drawer.liquid</code>, though the exact file/section name
           varies by theme (this store&apos;s theme won&apos;t match the old
@@ -284,22 +281,21 @@ export default function SetupCartTransform() {
         <s-paragraph>
           <s-text tone="neutral">
             Note the variable is <code>item</code> here (cart context), not{" "}
-            <code>line</code> — that name is specific to the order
-            confirmation email template, which uses a separate Liquid
-            context and was already handled for the first store.
+            <code>line</code> — that name is specific to the order confirmation
+            email template, which uses a separate Liquid context and was already
+            handled for the first store.
           </s-text>
         </s-paragraph>
       </s-section>
 
       <s-section heading="Also needed: hide the theme's own buy buttons (manual, per theme)">
         <s-paragraph>
-          When a product has both an engraving zone (Position Designer) and
-          a featured image, the Personalize block replaces the normal
-          buy-buttons with its own Add to Cart flow. If the theme&apos;s own
-          buy-buttons section doesn&apos;t know to step aside in that case,
-          the customer sees both sets of controls at once — confusing, and
-          the theme&apos;s own button would add the item with no engraving
-          properties at all.
+          When a product has both an engraving zone (Position Designer) and a
+          featured image, the Personalize block replaces the normal buy-buttons
+          with its own Add to Cart flow. If the theme&apos;s own buy-buttons
+          section doesn&apos;t know to step aside in that case, the customer
+          sees both sets of controls at once — confusing, and the theme&apos;s
+          own button would add the item with no engraving properties at all.
         </s-paragraph>
         <s-paragraph>
           Find wherever the theme renders its buy-buttons block (often a{" "}
@@ -330,22 +326,22 @@ export default function SetupCartTransform() {
         </pre>
         <s-paragraph>
           <s-text tone="critical">
-            Use <code>or</code>, not <code>and</code>. This check is a
-            negation of &quot;zone AND img&quot; (the Personalize block&apos;s
-            own condition) — negating &quot;A and B&quot; correctly gives
-            &quot;not A or not B&quot;, not &quot;not A and not B&quot;. Writing{" "}
+            Use <code>or</code>, not <code>and</code>. This check is a negation
+            of &quot;zone AND img&quot; (the Personalize block&apos;s own
+            condition) — negating &quot;A and B&quot; correctly gives &quot;not
+            A or not B&quot;, not &quot;not A and not B&quot;. Writing{" "}
             <code>and</code> here by mistake hides the theme&apos;s buttons
-            whenever only one of the two is set, and the Personalize block
-            stays hidden too in that same case (it needs both) — leaving the
-            product with no buy button at all, from either side.
+            whenever only one of the two is set, and the Personalize block stays
+            hidden too in that same case (it needs both) — leaving the product
+            with no buy button at all, from either side.
           </s-text>
         </s-paragraph>
       </s-section>
 
       <s-section slot="aside" heading="About deactivating">
         <s-paragraph>
-          Deactivating stops the engraved preview from showing at checkout
-          for new orders on this store. It doesn&apos;t affect orders already
+          Deactivating stops the engraved preview from showing at checkout for
+          new orders on this store. It doesn&apos;t affect orders already
           placed, and can be turned back on any time by activating again.
         </s-paragraph>
       </s-section>
