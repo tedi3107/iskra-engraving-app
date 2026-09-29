@@ -824,8 +824,25 @@ assign img = product.featured_image
         parent.style.position = 'relative';
       }
       if (parent) parent.appendChild(canvas);
-      externalTargets.push({ img: img, canvas: canvas });
-      renderToTarget(externalTargets[externalTargets.length - 1]);
+      var target = { img: img, canvas: canvas };
+      externalTargets.push(target);
+
+      // Some zoom/lightbox views animate open (expanding from nothing to
+      // full size) rather than appearing at final size immediately — the
+      // <img> can already be "complete" (pixels loaded, naturalWidth
+      // known) well before that animation settles, so the very first
+      // render can measure a getBoundingClientRect() of 0x0 and draw
+      // nothing visible. Watching the image's own rendered size, rather
+      // than rendering once and hoping it's already final, re-runs the
+      // same render whenever that size actually changes — covering the
+      // end of an open animation, an orientation change, or anything
+      // else that resizes it later, without needing to guess a delay.
+      if (window.ResizeObserver) {
+        new ResizeObserver(function () {
+          renderToTarget(target);
+        }).observe(img);
+      }
+      renderToTarget(target);
     }
 
     if (firstExternalImage) attachOverlay(firstExternalImage);
