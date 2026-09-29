@@ -14,6 +14,7 @@ import { MongoDBSessionStorage } from "@shopify/shopify-app-session-storage-mong
 if (!process.env.MONGODB_URI) {
   throw new Error("MONGODB_URI environment variable is not set.");
 }
+const mongodbUrl = new URL(process.env.MONGODB_URI);
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -23,7 +24,7 @@ const shopify = shopifyApp({
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new MongoDBSessionStorage(
-    process.env.MONGODB_URI,
+    mongodbUrl,
     "jewelry_engraving_sessions",
   ),
   distribution: AppDistribution.AppStore,
