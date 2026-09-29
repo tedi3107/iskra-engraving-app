@@ -1171,13 +1171,8 @@ assign img = product.featured_image
 
     function updateTriggerLabel() {
       if (!trigger || !triggerLabel) return;
-      if (input.value) {
-        triggerLabel.textContent = baseTriggerLabel + ': "' + input.value + '"';
-        trigger.classList.add('engraving-preview__trigger--filled');
-      } else {
         triggerLabel.textContent = baseTriggerLabel;
         trigger.classList.remove('engraving-preview__trigger--filled');
-      }
     }
 
     if (trigger && dialogEl) {
