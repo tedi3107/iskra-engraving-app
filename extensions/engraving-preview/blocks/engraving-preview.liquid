@@ -539,6 +539,7 @@ assign img = product.featured_image
     left: 0;
     width: 100%;
     height: 100%;
+    margin-top: 0 !important;
     pointer-events: none;
   }
 
@@ -864,20 +865,32 @@ assign img = product.featured_image
       // same when the parent has no padding. This zoom view's own
       // container does have padding around the image, so a 100%-sized
       // canvas previously covered that padding too, ending up both
-      // larger than and offset from the actual photo. offsetTop/Left are
-      // already relative to this same parent (attachOverlay guarantees
-      // it's the positioned ancestor), so no further conversion is
-      // needed, and re-reading them on every render (not just once at
-      // attach time) keeps it correct if the layout — and so the padding
-      // — changes on resize.
-      target.canvas.style.top = target.img.offsetTop + 'px';
-      target.canvas.style.left = target.img.offsetLeft + 'px';
-      target.canvas.style.width = target.img.offsetWidth + 'px';
-      target.canvas.style.height = target.img.offsetHeight + 'px';
+      // larger than and offset from the actual photo.
+      //
+      // getBoundingClientRect (rather than offsetTop/Left/Width/Height)
+      // is what keeps this precise: this theme's own layout uses
+      // fractional-pixel sizing (padding like "31.328px" was seen on
+      // this zoom view), and offsetTop and friends round to whole
+      // pixels, which was enough rounding error — after multiplying
+      // through the crop scale below — to leave the overlay just
+      // slightly off. Both rects are read from the same viewport
+      // coordinate space at the same moment, so subtracting one from the
+      // other gives the image's exact position relative to its parent
+      // regardless of that rounding, and reusing imgRect's own
+      // width/height for the crop math too (rather than a separate
+      // clientWidth/clientHeight read) means the size used to position
+      // the canvas and the size used to compute the crop can never
+      // quietly disagree with each other.
+      var imgRect = target.img.getBoundingClientRect();
+      var parentRect = target.canvas.parentElement.getBoundingClientRect();
+      var dW = imgRect.width;
+      var dH = imgRect.height;
+      target.canvas.style.top = imgRect.top - parentRect.top + 'px';
+      target.canvas.style.left = imgRect.left - parentRect.left + 'px';
+      target.canvas.style.width = dW + 'px';
+      target.canvas.style.height = dH + 'px';
 
       var crop = null;
-      var dW = target.img.clientWidth;
-      var dH = target.img.clientHeight;
       if (target.img.naturalWidth && target.img.naturalHeight && dW && dH) {
         var naturalW = target.img.naturalWidth;
         var naturalH = target.img.naturalHeight;
