@@ -811,10 +811,6 @@ assign img = product.featured_image
       var canvas = document.createElement('canvas');
       canvas.className = 'engraving-preview__canvas';
       canvas.style.position = 'absolute';
-      canvas.style.top = '0';
-      canvas.style.left = '0';
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
       canvas.style.pointerEvents = 'none';
       // A zoom view often positions its own <img> inside a container
       // that isn't itself position:relative — an absolutely-positioned
@@ -863,6 +859,22 @@ assign img = product.featured_image
     }
 
     function renderToTarget(target) {
+      // Matches the canvas to the <img>'s own box exactly, rather than
+      // stretching it across 100% of the parent — the two are only the
+      // same when the parent has no padding. This zoom view's own
+      // container does have padding around the image, so a 100%-sized
+      // canvas previously covered that padding too, ending up both
+      // larger than and offset from the actual photo. offsetTop/Left are
+      // already relative to this same parent (attachOverlay guarantees
+      // it's the positioned ancestor), so no further conversion is
+      // needed, and re-reading them on every render (not just once at
+      // attach time) keeps it correct if the layout — and so the padding
+      // — changes on resize.
+      target.canvas.style.top = target.img.offsetTop + 'px';
+      target.canvas.style.left = target.img.offsetLeft + 'px';
+      target.canvas.style.width = target.img.offsetWidth + 'px';
+      target.canvas.style.height = target.img.offsetHeight + 'px';
+
       var crop = null;
       var dW = target.img.clientWidth;
       var dH = target.img.clientHeight;
