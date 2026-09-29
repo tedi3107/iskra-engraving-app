@@ -317,12 +317,12 @@ export default function SetupCartTransform() {
           }}
         >
           {`{% liquid
-  assign zone = block.settings.product.metafields.engraving.zone.value
-  assign img = block.settings.product.featured_image
-%}
-{% if zone == blank or img == blank %}
-  {%- render 'buy-buttons', ... -%}
-{% endif %}`}
+              assign zone = block.settings.product.metafields.engraving.zone.value
+              assign img = block.settings.product.featured_image
+            %}
+            {% if zone == blank or img == blank %}
+              {%- render 'buy-buttons', ... -%}
+            {% endif %}`}
         </pre>
         <s-paragraph>
           <s-text tone="critical">
