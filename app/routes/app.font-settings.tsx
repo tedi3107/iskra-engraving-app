@@ -20,6 +20,14 @@ export type LibraryFont = {
   suggestedName: string;
 };
 
+type ShopifyFileEdge = {
+  node: {
+    id: string;
+    fileStatus?: string | null;
+    url?: string | null;
+  };
+};
+
 function isFontUrl(url: string) {
   const withoutQuery = url.split("?")[0].toLowerCase();
   return FONT_EXTENSIONS.some((ext) => withoutQuery.endsWith(ext));
@@ -64,18 +72,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const value = json.data?.shop?.metafield?.value as string | undefined;
   const fonts: StoredFonts = value ? JSON.parse(value) : {};
 
-  const fileEdges = json.data?.files?.edges ?? [];
-  const libraryFonts: LibraryFont[] = fileEdges
-    .map((edge: any) => edge.node)
-    .filter(
-      (node: any) =>
-        node?.fileStatus === "READY" && node?.url && isFontUrl(node.url),
-    )
-    .map((node: any) => ({
-      id: node.id,
-      url: node.url,
-      suggestedName: suggestNameFromUrl(node.url),
-    }));
+  const fileEdges = (json.data?.files?.edges ?? []) as ShopifyFileEdge[];
+  const libraryFonts: LibraryFont[] = fileEdges.flatMap(({ node }) => {
+    if (node.fileStatus !== "READY" || !node.url || !isFontUrl(node.url)) {
+      return [];
+    }
+
+    return [
+      {
+        id: node.id,
+        url: node.url,
+        suggestedName: suggestNameFromUrl(node.url),
+      },
+    ];
+  });
 
   return {
     fontOne: fonts.fontOne ?? null,

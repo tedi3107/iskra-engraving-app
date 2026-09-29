@@ -1,7 +1,18 @@
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import { describe, beforeAll, test, expect } from "vitest";
-import { buildFunction, getFunctionInfo, loadSchema, loadInputQuery, loadFixture, validateTestAssets, runFunction } from "@shopify/shopify-function-test-helpers";
+import {
+  buildFunction,
+  getFunctionInfo,
+  loadSchema,
+  loadInputQuery,
+  loadFixture,
+  validateTestAssets,
+  runFunction,
+} from "@shopify/shopify-function-test-helpers";
+
+const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 describe("Default Integration Test", () => {
   let schema;
@@ -13,14 +24,14 @@ describe("Default Integration Test", () => {
   let wasmPath;
 
   beforeAll(async () => {
-    functionDir = path.dirname(__dirname);
+    functionDir = path.dirname(testDirectory);
     await buildFunction(functionDir);
     functionInfo = await getFunctionInfo(functionDir);
     ({ schemaPath, functionRunnerPath, wasmPath, targeting } = functionInfo);
     schema = await loadSchema(schemaPath);
   }, 45000);
 
-  const fixturesDir = path.join(__dirname, "fixtures");
+  const fixturesDir = path.join(testDirectory, "fixtures");
   const fixtureFiles = fs
     .readdirSync(fixturesDir)
     .filter((file) => file.endsWith(".json"))
@@ -32,12 +43,22 @@ describe("Default Integration Test", () => {
       const targetInputQueryPath = targeting[fixture.target].inputQueryPath;
       const inputQueryAST = await loadInputQuery(targetInputQueryPath);
 
-      const validationResult = await validateTestAssets({ schema, fixture, inputQueryAST });
+      const validationResult = await validateTestAssets({
+        schema,
+        fixture,
+        inputQueryAST,
+      });
       expect(validationResult.inputQuery.errors).toEqual([]);
       expect(validationResult.inputFixture.errors).toEqual([]);
       expect(validationResult.outputFixture.errors).toEqual([]);
 
-      const runResult = await runFunction(fixture, functionRunnerPath, wasmPath, targetInputQueryPath, schemaPath);
+      const runResult = await runFunction(
+        fixture,
+        functionRunnerPath,
+        wasmPath,
+        targetInputQueryPath,
+        schemaPath,
+      );
       expect(runResult.error).toBeNull();
       expect(runResult.result.output).toEqual(fixture.expectedOutput);
     }, 10000);
