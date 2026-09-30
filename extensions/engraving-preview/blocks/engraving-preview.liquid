@@ -360,10 +360,10 @@ assign img = product.featured_image
     bottom: auto !important;
     transform: translate(-50%, -50%) !important;
     margin: 0 !important;
-    width: 90vw !important;
+    width: 98vw !important;
     max-width: 480px !important;
     height: auto !important;
-    max-height: 85vh !important;
+    max-height: 98vh !important;
     overflow-y: auto !important;
     box-sizing: border-box !important;
     border: none;
@@ -375,6 +375,7 @@ assign img = product.featured_image
 
   .engraving-preview__dialog::backdrop {
     background: rgba(22, 35, 61, 0.55);
+    backdrop-filter: blur(10px);
   }
 
   .engraving-preview__dialog-header {
@@ -534,6 +535,7 @@ assign img = product.featured_image
   }
 
   .engraving-preview__canvas {
+    display: block!important;
     position: absolute;
     top: 0;
     left: 0;
@@ -876,6 +878,37 @@ assign img = product.featured_image
       zoomObserver.observe(document.body, { childList: true, subtree: true });
     }
 
+    // Variant/metal switches replace the gallery's photo(s) outright —
+    // a different file entirely, not a resized copy of the same one —
+    // so trackedIdentity itself has to move to match whichever photo is
+    // current before anything already on the page can be recognized
+    // again. Called right after trackedIdentity is updated (see
+    // swapToVariantImage below): drops overlays whose <img> has already
+    // left the document (the previous metal's node, once the theme
+    // swaps it out), then re-scans for whatever now matches the new
+    // identity, wherever it sits on the page — covering both a gallery
+    // that replaces its <img> nodes on switch and one that already has
+    // every metal's photo sitting in the DOM.
+    function refreshExternalTargets() {
+      externalTargets = externalTargets.filter(function (target) {
+        if (target.img.isConnected) return true;
+        if (target.canvas.parentNode) target.canvas.parentNode.removeChild(target.canvas);
+        return false;
+      });
+
+      document.querySelectorAll('img').forEach(function (candidate) {
+        if (candidate.closest('.engraving-preview')) return;
+        if (imageIdentity(candidate.src) !== trackedIdentity) return;
+        if (candidate.complete) {
+          attachOverlay(candidate);
+        } else {
+          candidate.addEventListener('load', function () {
+            attachOverlay(candidate);
+          }, { once: true });
+        }
+      });
+    }
+
     function renderToTarget(target) {
       // Matches the canvas to the <img>'s own box exactly, rather than
       // stretching it across 100% of the parent — the two are only the
@@ -1140,7 +1173,16 @@ assign img = product.featured_image
 
     function swapToVariantImage(variantId) {
       var url = variantImages[String(variantId)];
-      if (!url || !imageEl || imageEl.src === url) return;
+      if (!url) return;
+
+      // Kept separate from the "already showing this photo" guard below:
+      // the gallery's own external image(s) can still need re-attaching
+      // even when the internal dialog preview happens to already match
+      // (e.g. the very first call, on page load), so this always runs.
+      trackedIdentity = imageIdentity(url);
+      refreshExternalTargets();
+
+      if (!imageEl || imageEl.src === url) return;
       imageEl.src = url;
       whenImageReady(imageEl, function () {
         renderInternal();
@@ -1183,7 +1225,9 @@ assign img = product.featured_image
     // popup's own button — every other way of leaving the dialog (the ×
     // button, clicking the backdrop, pressing Escape) is blocked while
     // this is true, so a stray click can't abandon an upload that's
-    // already in flight or fire a second one alongside it.
+    // already in progress. A second click here would fire a second
+    // upload/add-to-cart, and closing partway through would abandon an
+    // upload that's already in progress.
     var isProcessing = false;
 
     function updateTriggerLabel() {
