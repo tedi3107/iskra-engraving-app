@@ -1,0 +1,593 @@
+  engraving-preview.engraving-preview {
+    display: block;
+    margin: 1.25rem 0;
+  }
+
+  .engraving-preview {
+    --engrave-navy: #16233d;
+    --engrave-navy-dark: #0e1729;
+    --engrave-cream: #faf3ec;
+    --engrave-border: #d9cfc2;
+  }
+
+  .engraving-preview__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0 1.5rem;
+    height: 3.25rem !important;
+    max-height: 3.25rem !important;
+    box-sizing: border-box !important;
+    border: 1.5px solid var(--engrave-navy);
+    border-radius: var(--btn-radius, 8px) !important;
+    background: var(--btn-bg, #fff) !important;
+    color: var(--btn-text, var(--engrave-navy)) !important;
+    cursor: pointer;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.03rem;
+    width: 100%;
+    max-width: 44rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .engraving-preview__trigger:hover {
+    background: var(--btn-bg-hover, var(--engrave-navy)) !important;
+    color: var(--btn-text-hover, #fff) !important;
+  }
+
+  .engraving-preview__trigger-icon {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+  }
+
+  .engraving-preview__trigger--filled {
+    background: var(--btn-bg-filled, var(--engrave-navy)) !important;
+    color: var(--btn-text-filled, #fff) !important;
+  }
+
+  .engraving-preview__quick-add {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    max-width: 44rem;
+    margin-top: 0.6rem;
+    padding: 0 1.5rem;
+    height: 3.25rem !important;
+    overflow: visible !important;
+    box-sizing: border-box;
+    background: var(--quick-add-bg, var(--engrave-navy)) !important;
+    color: var(--quick-add-text, #fff) !important;
+    border: 1.5px solid var(--quick-add-border, var(--engrave-navy)) !important;
+    border-radius: var(--quick-add-radius, 8px) !important;
+    cursor: pointer;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.03rem;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .engraving-preview__quick-add .engraving-preview__quick-add-icon {
+    display: none !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    max-width: 2.5rem !important;
+    max-height: 2.5rem !important;
+    flex-shrink: 0 !important;
+    color: inherit !important;
+    visibility: hidden;
+  }
+
+  .engraving-preview__quick-add--loading .engraving-preview__quick-add-icon {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .engraving-preview__quick-add-icon path {
+    fill: currentColor !important;
+  }
+
+  .engraving-preview__quick-add:hover {
+    background: var(--quick-add-bg-hover, var(--engrave-navy-dark)) !important;
+    color: var(--quick-add-text-hover, #fff) !important;
+  }
+
+  .engraving-preview__quick-add:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* The host theme's own CSS can carry rules that target the bare
+     <dialog> element (a "drawer" or "modal" pattern applied globally,
+     say) — author stylesheet rules always beat the browser's built-in
+     dialog centering, regardless of specificity. Rather than hope no
+     such rule exists on any given theme, every property that could turn
+     this into a full-height side panel is pinned explicitly here, so
+     this dialog always renders as a small centered card no matter what
+     else is on the page. */
+  dialog.engraving-preview__dialog {
+    position: fixed !important;
+    inset: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    width: 98vw !important;
+    max-width: 480px !important;
+    height: auto !important;
+    max-height: 98vh !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    border: none;
+    border-radius: 16px;
+    padding: 3rem 1rem;
+    background: var(--engrave-cream);
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__dialog::backdrop {
+    background: rgba(22, 35, 61, 0.55);
+    backdrop-filter: blur(10px);
+  }
+
+  .engraving-preview__dialog-title {
+    margin: 0 2rem 1rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--engrave-navy-dark);
+  }
+
+  .engraving-preview__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 2;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.1rem 0.4rem;
+    max-height: 3.125rem;
+    box-sizing: border-box;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__confirm {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0 1rem;
+    height: 3.125rem;
+    box-sizing: border-box;
+    background: var(--engrave-navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04rem;
+    text-transform: uppercase;
+    transition: background 0.15s ease;
+  }
+
+  .engraving-preview__confirm-price {
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .engraving-preview__confirm:hover {
+    background: var(--engrave-navy-dark);
+  }
+
+  .engraving-preview__confirm:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* Covers the entire dialog while the snapshot uploads and the cart
+     form submits, so nothing underneath (close button, backdrop, the
+     confirm button itself) can be clicked mid-flight — a second click
+     here would fire a second upload/add-to-cart, and closing partway
+     through would abandon an upload that's already in progress. */
+  .engraving-preview__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: var(--engrave-cream);
+    border-radius: 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--engrave-navy);
+    z-index: 1;
+  }
+
+  .engraving-preview__loading-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-icon-body {
+    /* The tool itself stays put — only the sparks around it animate,
+       same as a real engraving tool doesn't visibly move while it's the
+       sparks flying off the tip that show it's actively cutting. */
+  }
+
+  .engraving-icon-spark {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: engraving-spark-fly 1.2s ease-out infinite;
+  }
+
+  /* Each spark flies its own small distance and direction, roughly
+     outward from wherever it sits on the icon, rather than all five
+     moving identically — closer to how real sparks scatter unevenly off
+     a tool than one uniform motion repeated five times would look. The
+     differing delays (below) then keep them from all flying at once. */
+  .engraving-icon-spark-1 {
+    animation-delay: 0s;
+    --fly-x: 22px;
+    --fly-y: -14px;
+  }
+
+  .engraving-icon-spark-2 {
+    animation-delay: 0.2s;
+    --fly-x: -18px;
+    --fly-y: -20px;
+  }
+
+  .engraving-icon-spark-3 {
+    animation-delay: 0.4s;
+    --fly-x: 16px;
+    --fly-y: 22px;
+  }
+
+  .engraving-icon-spark-4 {
+    animation-delay: 0.6s;
+    --fly-x: -22px;
+    --fly-y: 12px;
+  }
+
+  .engraving-icon-spark-5 {
+    animation-delay: 0.8s;
+    --fly-x: 14px;
+    --fly-y: -20px;
+  }
+
+  @keyframes engraving-spark-fly {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.5);
+    }
+
+    35% {
+      opacity: 1;
+      transform: translate(calc(var(--fly-x) * 0.4), calc(var(--fly-y) * 0.4)) scale(1.1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(var(--fly-x), var(--fly-y)) scale(0.4);
+    }
+  }
+
+  .engraving-preview__error {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    background: #fbe9e7;
+    color: #9a3324;
+    font-size: 0.9rem;
+  }
+
+  .engraving-preview__dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .engraving-preview__dialog-controls {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Mobile keeps the original single-column, stacked layout (image,
+     then controls) exactly as before — this breakpoint only kicks in
+     once there's enough width for a comfortable side-by-side split. */
+  @media (min-width: 640px) {
+    dialog.engraving-preview__dialog {
+      max-width: 1020px !important;
+      padding: 1.5rem;
+    }
+
+    .engraving-preview__dialog-body {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 2rem;
+    }
+
+    .engraving-preview__dialog-media {
+      flex: 0 0 50%;
+    }
+
+    .engraving-preview__dialog-media .engraving-preview__stage {
+      display: block;
+      width: 100%;
+    }
+
+    .engraving-preview__dialog-controls {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  .engraving-preview__stage {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .engraving-preview__image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .engraving-preview__canvas {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin-top: 0 !important;
+    pointer-events: none;
+  }
+
+  .engraving-preview__label {
+    display: block;
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.03rem;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__variant-picker {
+    --pdp-blue: #132A43;
+    --pdp-beige: #FFF9F3;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-family: "Work Sans", sans-serif;
+    color: var(--pdp-blue);
+  }
+
+  .engraving-preview__variant-row {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .engraving-preview__variant-option-group {
+    min-width: 0;
+  }
+
+  .engraving-preview__variant-option-group--material,
+  .engraving-preview__variant-option-group--size {
+    flex: 1;
+  }
+
+  .engraving-preview__variant-legend {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.3;
+    text-transform: none;
+    color: var(--pdp-blue);
+  }
+
+  .engraving-preview__variant-legend strong {
+    font-weight: 700;
+  }
+
+  .engraving-preview__variant-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .engraving-preview__variant-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.5rem 0.25rem 0;
+    padding: 0.45rem 0.9rem;
+    border: 1.5px solid var(--pdp-blue);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--pdp-blue);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.05rem;
+    cursor: pointer;
+  }
+
+  .engraving-preview__variant-pill:hover {
+    border-color: var(--pdp-blue);
+  }
+
+  .engraving-preview__variant-pill[data-selected="true"]:not(.engraving-preview__variant-pill--material) {
+    background: var(--pdp-blue);
+    color: #fff;
+  }
+
+  .engraving-preview__variant-pill--unavailable {
+    opacity: 0.5;
+    text-decoration: none;
+  }
+
+  .engraving-preview__variant-pill--material {
+    position: relative;
+    overflow: visible;
+    display: inline-block;
+    width: 1.375rem;
+    height: 1.375rem;
+    margin: 0.35rem 0.55rem 0.35rem 0;
+    padding: 0;
+    border: 3px solid transparent;
+    outline: 1px solid transparent;
+    border-radius: 50%;
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
+    background-clip: padding-box;
+  }
+
+  .engraving-preview__variant-pill--material:hover {
+    border-color: transparent;
+  }
+
+  .engraving-preview__variant-pill--material[data-selected="true"] {
+    border-color: #fff;
+    color: transparent;
+  }
+
+  .engraving-preview__variant-pill--material[data-selected="true"]::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid var(--pdp-blue);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+
+  .engraving-preview__variant-pill--size {
+    height: 2rem;
+    margin: 0 0.15rem 0.25rem 0;
+    padding: 0 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--pdp-blue);
+    box-shadow: none;
+  }
+
+  .engraving-preview__variant-pill--size[data-selected="true"] {
+    background: var(--pdp-blue);
+    color: #fff;
+  }
+
+  .engraving-preview__variant-pills--size {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .engraving-preview__input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .engraving-preview__input-label {
+    font-size: 0.875rem;
+    letter-spacing: 0.03rem;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__char-counter {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--engrave-navy);
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .engraving-preview__char-counter--limit {
+    opacity: 1;
+    color: #9a3324;
+  }
+
+  .engraving-preview__input {
+    display: block;
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.65rem 0.8rem;
+    max-height: 2.75rem;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    background: #fff;
+    border: 1.5px solid var(--engrave-border);
+    border-radius: 8px;
+    color: var(--engrave-navy);
+  }
+
+  .engraving-preview__input:focus {
+    outline: none;
+    border-color: var(--engrave-navy);
+  }
+
+  .engraving-preview__font-picker {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .engraving-preview__font-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 0.4rem;
+    border: 1.5px solid var(--engrave-border);
+    border-radius: 999px;
+    padding: 0.5rem 0.85rem;
+    max-height: 2.75rem;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-size: 1.05rem;
+    background: #fff;
+    color: var(--engrave-navy);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .engraving-preview__font-option:has(input:checked) {
+    background: var(--engrave-navy);
+    border-color: var(--engrave-navy);
+    color: #fff;
+  }
+
+  .engraving-preview__font-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
