@@ -72,7 +72,9 @@
           return;
         }
         localStorage.setItem(engravingStorageKey, JSON.stringify(merged));
-      } catch (e) {}
+      } catch (e) {
+        // localStorage can throw in private mode or when quota is full
+      }
     }
 
     var savedEngravingDraft = loadEngravingDraft();
@@ -299,7 +301,9 @@
       var filename = slash >= 0 ? path.slice(slash + 1) : path;
       try {
         filename = decodeURIComponent(filename);
-      } catch (e) {}
+      } catch (e) {
+        // keep the raw filename if it isn't valid URI encoding
+      }
       filename = filename.replace(
         /_\d+x(\d+)?(_crop_[a-z]+)?(?=\.[^.]+$)/i,
         "",
@@ -527,16 +531,16 @@
     // so attaching an overlay cannot recurse back into this observer.
     if (window.MutationObserver) {
       var refreshScheduled = false;
-      function scheduleOverlayRefresh() {
+      var scheduleOverlayRefresh = function () {
         if (!trackedIdentity || refreshScheduled) return;
         refreshScheduled = true;
         requestAnimationFrame(function () {
           refreshScheduled = false;
           refreshExternalTargets();
         });
-      }
+      };
 
-      function mutationLooksRelevant(mutation) {
+      var mutationLooksRelevant = function (mutation) {
         if (mutation.type === "attributes") {
           var attrTarget = mutation.target;
           if (!attrTarget || attrTarget.nodeType !== 1) return false;
@@ -1113,7 +1117,9 @@
       });
       try {
         picker.dispatchEvent(new Event("change", { bubbles: true }));
-      } catch (e) {}
+      } catch (e) {
+        // Event constructor can throw in older WebViews
+      }
     }
 
     function themeSectionId() {
@@ -1210,7 +1216,9 @@
           try {
             if (typeof gallery.setActiveMedia === "function")
               gallery.setActiveMedia(mediaId, true);
-          } catch (e) {}
+          } catch (e) {
+            // custom galleries may not implement Dawn's setActiveMedia
+          }
         });
       }
 
@@ -1434,12 +1442,14 @@
         lastSeenVariantId = String(variant.id);
         swapToVariantImage(variant.id);
       });
+      var subscribeToVariantChange = window.subscribe;
+      var pubSubEvents = window.PUB_SUB_EVENTS;
       if (
-        typeof subscribe === "function" &&
-        typeof PUB_SUB_EVENTS !== "undefined" &&
-        PUB_SUB_EVENTS.variantChange
+        typeof subscribeToVariantChange === "function" &&
+        pubSubEvents &&
+        pubSubEvents.variantChange
       ) {
-        subscribe(PUB_SUB_EVENTS.variantChange, function (event) {
+        subscribeToVariantChange(pubSubEvents.variantChange, function (event) {
           var variant = event && event.data && event.data.variant;
           if (!variant) return;
           var selected = findVariantData(lastSeenVariantId);
