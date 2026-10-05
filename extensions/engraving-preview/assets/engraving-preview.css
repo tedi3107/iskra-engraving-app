@@ -119,10 +119,10 @@
     bottom: auto !important;
     transform: translate(-50%, -50%) !important;
     margin: 0 !important;
-    width: 98vw !important;
+    width: 98dvw !important;
     max-width: 480px !important;
     height: auto !important;
-    max-height: 98vh !important;
+    max-height: 98dvh !important;
     overflow-y: auto !important;
     box-sizing: border-box !important;
     border: none;

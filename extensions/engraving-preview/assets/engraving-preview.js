@@ -583,7 +583,7 @@
             return true;
         }
         return false;
-      }
+      };
 
       host._overlayObserver = new MutationObserver(function (mutations) {
         for (var m = 0; m < mutations.length; m++) {
@@ -621,6 +621,85 @@
       });
     }
 
+    function objectPositionAxis(part, fallback) {
+      if (!part) return fallback;
+      if (part === "left" || part === "top") return 0;
+      if (part === "center") return 0.5;
+      if (part === "right" || part === "bottom") return 1;
+      if (/%$/.test(part)) {
+        var pct = parseFloat(part);
+        return isNaN(pct) ? fallback : pct / 100;
+      }
+      return fallback;
+    }
+
+    function objectPositionFactors(img) {
+      var raw = "";
+      try {
+        raw = window.getComputedStyle(img).objectPosition || "";
+      } catch (e) {
+        raw = "";
+      }
+      var parts = raw.trim().split(/\s+/);
+      if (parts.length === 1) {
+        var only = parts[0];
+        if (only === "top" || only === "bottom")
+          return { x: 0.5, y: objectPositionAxis(only, 0.5) };
+        return { x: objectPositionAxis(only, 0.5), y: 0.5 };
+      }
+      return {
+        x: objectPositionAxis(parts[0], 0.5),
+        y: objectPositionAxis(parts[1], 0.5),
+      };
+    }
+
+    // Same source-photo UV for every overlay. Zone percents are of the
+    // full file; this is how CSS actually paints that file into THIS
+    // <img> box (object-fit + object-position). Zoom gets no special
+    // crop — if the photo sits in the same place on the metal here as
+    // on the PDP image, the letter will too.
+    function cropFromRenderedImage(img, boxW, boxH) {
+      var naturalW = img && img.naturalWidth;
+      var naturalH = img && img.naturalHeight;
+      if (!naturalW || !naturalH || !boxW || !boxH) return null;
+      var fit = "fill";
+      try {
+        fit = window.getComputedStyle(img).objectFit || "fill";
+      } catch (e) {
+        fit = "fill";
+      }
+      var scaleX;
+      var scaleY;
+      if (fit === "contain") {
+        var contain = Math.min(boxW / naturalW, boxH / naturalH);
+        scaleX = contain;
+        scaleY = contain;
+      } else if (fit === "scale-down") {
+        var down = Math.min(1, boxW / naturalW, boxH / naturalH);
+        scaleX = down;
+        scaleY = down;
+      } else if (fit === "none") {
+        scaleX = 1;
+        scaleY = 1;
+      } else if (fit === "cover") {
+        var cover = Math.max(boxW / naturalW, boxH / naturalH);
+        scaleX = cover;
+        scaleY = cover;
+      } else {
+        scaleX = boxW / naturalW;
+        scaleY = boxH / naturalH;
+      }
+      var pos = objectPositionFactors(img);
+      return {
+        naturalW: naturalW,
+        naturalH: naturalH,
+        scaleX: scaleX,
+        scaleY: scaleY,
+        offsetX: (naturalW * scaleX - boxW) * pos.x,
+        offsetY: (naturalH * scaleY - boxH) * pos.y,
+      };
+    }
+
     function renderToTarget(target) {
       // Matches the canvas to the <img>'s own box exactly, rather than
       // stretching it across 100% of the parent — the two are only the
@@ -645,40 +724,33 @@
       // quietly disagree with each other.
       if (!target.canvas || !target.canvas.parentElement) return;
       var imgRect = target.img.getBoundingClientRect();
-      var parentRect = target.canvas.parentElement.getBoundingClientRect();
+      var canvasParent = target.canvas.parentElement;
+      var parentRect = canvasParent.getBoundingClientRect();
       var dW = imgRect.width;
       var dH = imgRect.height;
-      target.canvas.style.top = imgRect.top - parentRect.top + "px";
-      target.canvas.style.left = imgRect.left - parentRect.left + "px";
+      // The canvas is position:absolute, so top/left are measured inside
+      // the parent's scrollable content, not from what is currently
+      // visible. When the parent is a scroll container (the zoom modal),
+      // the viewport-space difference above is off by exactly
+      // scrollTop/scrollLeft (plus the parent's border), so they are
+      // added back here. For parents that don't scroll, both are 0 and
+      // nothing changes.
+      target.canvas.style.top =
+        imgRect.top -
+        parentRect.top -
+        canvasParent.clientTop +
+        canvasParent.scrollTop +
+        "px";
+      target.canvas.style.left =
+        imgRect.left -
+        parentRect.left -
+        canvasParent.clientLeft +
+        canvasParent.scrollLeft +
+        "px";
       target.canvas.style.width = dW + "px";
       target.canvas.style.height = dH + "px";
 
-      var crop = null;
-      if (target.img.naturalWidth && target.img.naturalHeight && dW && dH) {
-        var naturalW = target.img.naturalWidth;
-        var naturalH = target.img.naturalHeight;
-        var fit = window.getComputedStyle(target.img).objectFit;
-        if (fit === "fill") {
-          crop = {
-            naturalW: naturalW,
-            naturalH: naturalH,
-            scaleX: dW / naturalW,
-            scaleY: dH / naturalH,
-            offsetX: 0,
-            offsetY: 0,
-          };
-        } else {
-          var scale = Math.max(dW / naturalW, dH / naturalH);
-          crop = {
-            naturalW: naturalW,
-            naturalH: naturalH,
-            scaleX: scale,
-            scaleY: scale,
-            offsetX: (naturalW * scale - dW) / 2,
-            offsetY: (naturalH * scale - dH) / 2,
-          };
-        }
-      }
+      var crop = cropFromRenderedImage(target.img, dW, dH);
       renderToCanvas(target.canvas, dW, dH, crop);
     }
 
@@ -703,10 +775,20 @@
       sampleAndApplyColor(imageEl && imageEl.src);
 
       if (family && document.fonts && document.fonts.load) {
+        var fontSizePercent = geomAttr("font-size");
+        var boxW = (imageEl && imageEl.clientWidth) || 400;
+        var boxH = (imageEl && imageEl.clientHeight) || 400;
+        var fontPx =
+          shape === "straight"
+            ? (fontSizePercent / 100) * (geomAttr("height") / 100) * boxH
+            : (fontSizePercent / 100) * (geomAttr("radius") / 100) * boxW;
+        var loadPx = Math.max(16, Math.round(fontPx));
         document.fonts
-          .load('16px "' + family + '"')
+          .load(loadPx + 'px "' + family + '"')
           .then(renderAllPreviews)
-          .catch(function () {});
+          .catch(function () {
+            // face may already be cached or the load may be blocked
+          });
       }
 
       if (family) {
@@ -1760,7 +1842,7 @@
         "attribute vec2 aPos; varying vec2 vUv;" +
         "void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }";
       var fsSource =
-        "precision mediump float;" +
+        "precision highp float;" +
         "uniform sampler2D uHeight; uniform vec2 uTexel;" +
         "uniform vec3 uLightDir; uniform vec3 uBase; uniform vec3 uHi;" +
         "varying vec2 vUv;" +
@@ -1846,7 +1928,7 @@
     function captureEngravingSnapshot() {
       return new Promise(function (resolve) {
         if (!imageEl || !imageEl.naturalWidth) return resolve(null);
-        var maxDimension = 500;
+        var maxDimension = 1400;
         var scale = Math.min(
           1,
           maxDimension / Math.max(imageEl.naturalWidth, imageEl.naturalHeight),
@@ -1889,7 +1971,7 @@
               resolve(blob);
             },
             "image/jpeg",
-            0.88,
+            0.92,
           );
         };
         baseImg.onerror = function () {
