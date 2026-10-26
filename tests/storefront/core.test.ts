@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadStorefrontCore } from "../../../app/test-utils/load-storefront-core";
+import { loadStorefrontCore } from "../../app/test-utils/load-storefront-core";
 
 const core = loadStorefrontCore();
 
