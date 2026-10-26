@@ -1,0 +1,36 @@
+{
+  "payload": {
+    "export": "cart-transform-run",
+    "target": "cart.transform.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 1,
+            "engravedPreview": {
+              "value": "https://cdn.shopify.com/s/files/1/0000/0000/files/engraving-preview-1.jpg"
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "quantity": 2,
+            "engravedPreview": null
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "lineUpdate": {
+            "cartLineId": "gid://shopify/CartLine/1",
+            "image": {
+              "url": "https://cdn.shopify.com/s/files/1/0000/0000/files/engraving-preview-1.jpg"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

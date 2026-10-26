@@ -5,7 +5,21 @@ application_url = "https://iskra-engraving-app.vercel.app/app"
 embedded = true
 
 [webhooks]
-api_version = "2026-10"
+api_version = "2026-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  # Mandatory privacy (GDPR) webhooks — required for apps distributed
+  # through the App Store, harmless otherwise.
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "/webhooks/compliance"
 
 [access_scopes]
 scopes = "write_products,write_files,write_cart_transforms,read_files"

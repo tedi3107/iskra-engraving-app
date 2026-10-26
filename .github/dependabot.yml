@@ -56,10 +56,6 @@ updates:
     groups:
 
       # Group together PRs of dependant packages
-      prisma:
-        patterns:
-          - 'prisma'
-          - '@prisma/client'
       react:
         patterns:
           - 'react'

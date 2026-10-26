@@ -44,6 +44,27 @@ function suggestNameFromUrl(url: string) {
   return withoutHash.replace(/[_-]+/g, " ").trim() || "Untitled font";
 }
 
+// A hand-edited or corrupted metafield must not take the whole page down.
+function parseStoredFonts(value: string | null | undefined): StoredFonts {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? (parsed as StoredFonts) : {};
+  } catch {
+    return {};
+  }
+}
+
+// The family name ends up in storefront CSS (@font-face) and in canvas font
+// strings, so it's limited to characters that are safe in both.
+const FONT_NAME_PATTERN = /^[\p{L}\p{N} _.-]{1,64}$/u;
+const FONT_NAME_ERROR =
+  "Font name can use letters, numbers, spaces, dots, dashes and underscores (max 64).";
+
+function isAllowedFontUrl(url: string) {
+  return url.startsWith("https://") && isFontUrl(url);
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
 
@@ -55,7 +76,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             value
           }
         }
-        files(first: 50, sortKey: CREATED_AT, reverse: true) {
+        files(first: 250, sortKey: CREATED_AT, reverse: true) {
           edges {
             node {
               id
@@ -70,7 +91,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
   const json = await response.json();
   const value = json.data?.shop?.metafield?.value as string | undefined;
-  const fonts: StoredFonts = value ? JSON.parse(value) : {};
+  const fonts = parseStoredFonts(value);
 
   const fileEdges = (json.data?.files?.edges ?? []) as ShopifyFileEdge[];
   const libraryFonts: LibraryFont[] = fileEdges.flatMap(({ node }) => {
@@ -94,11 +115,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-async function saveFontToSlot(
-  admin: Awaited<ReturnType<typeof authenticate.admin>>["admin"],
-  slot: "one" | "two",
-  font: StoredFont,
-) {
+type AdminClient = Awaited<ReturnType<typeof authenticate.admin>>["admin"];
+
+// Read-modify-write of the shop's fonts metafield. Returns an error message
+// for the UI, or null on success (GraphQL errors and userErrors included —
+// previously a failed write still reported success).
+async function updateShopFonts(
+  admin: AdminClient,
+  mutate: (fonts: StoredFonts) => StoredFonts,
+): Promise<string | null> {
   const shopResponse = await admin.graphql(
     `#graphql
       query ShopAndFonts {
@@ -110,16 +135,10 @@ async function saveFontToSlot(
   );
   const shopJson = await shopResponse.json();
   const shopId = shopJson.data?.shop?.id;
-  const existing: StoredFonts = shopJson.data?.shop?.metafield?.value
-    ? JSON.parse(shopJson.data.shop.metafield.value)
-    : {};
+  if (!shopId) return "Could not load the store's font settings.";
+  const updated = mutate(parseStoredFonts(shopJson.data?.shop?.metafield?.value));
 
-  const updated: StoredFonts = {
-    ...existing,
-    [slot === "one" ? "fontOne" : "fontTwo"]: font,
-  };
-
-  await admin.graphql(
+  const saveResponse = await admin.graphql(
     `#graphql
       mutation SaveShopFonts($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) {
@@ -141,52 +160,25 @@ async function saveFontToSlot(
       },
     },
   );
+  const saveJson = await saveResponse.json();
+  const userErrors = saveJson.data?.metafieldsSet?.userErrors ?? [];
+  if (userErrors.length > 0) return userErrors[0].message as string;
+  if (!saveJson.data?.metafieldsSet) return "Could not save the font settings.";
+  return null;
 }
 
-async function removeFontFromSlot(
-  admin: Awaited<ReturnType<typeof authenticate.admin>>["admin"],
-  slot: "one" | "two",
-) {
-  const shopResponse = await admin.graphql(
-    `#graphql
-      query ShopAndFonts {
-        shop {
-          id
-          metafield(namespace: "${METAFIELD_NAMESPACE}", key: "${METAFIELD_KEY}") { value }
-        }
-      }`,
-  );
-  const shopJson = await shopResponse.json();
-  const shopId = shopJson.data?.shop?.id;
-  const existing: StoredFonts = shopJson.data?.shop?.metafield?.value
-    ? JSON.parse(shopJson.data.shop.metafield.value)
-    : {};
+const slotKey = (slot: "one" | "two") => (slot === "one" ? "fontOne" : "fontTwo");
 
-  const updated: StoredFonts = { ...existing };
-  delete updated[slot === "one" ? "fontOne" : "fontTwo"];
+function saveFontToSlot(admin: AdminClient, slot: "one" | "two", font: StoredFont) {
+  return updateShopFonts(admin, (fonts) => ({ ...fonts, [slotKey(slot)]: font }));
+}
 
-  await admin.graphql(
-    `#graphql
-      mutation SaveShopFonts($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          metafields { id }
-          userErrors { field message }
-        }
-      }`,
-    {
-      variables: {
-        metafields: [
-          {
-            ownerId: shopId,
-            namespace: METAFIELD_NAMESPACE,
-            key: METAFIELD_KEY,
-            type: "json",
-            value: JSON.stringify(updated),
-          },
-        ],
-      },
-    },
-  );
+function removeFontFromSlot(admin: AdminClient, slot: "one" | "two") {
+  return updateShopFonts(admin, (fonts) => {
+    const updated = { ...fonts };
+    delete updated[slotKey(slot)];
+    return updated;
+  });
 }
 
 // Uploading a font file to Shopify (rather than linking to one hosted
@@ -205,7 +197,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (intent === "remove") {
-    await removeFontFromSlot(admin, slot);
+    const error = await removeFontFromSlot(admin, slot);
+    if (error) return { error };
     return { success: true, slot, removed: true };
   }
 
@@ -216,17 +209,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (typeof familyName !== "string" || !familyName.trim()) {
       return { error: "Give this font a name first." };
     }
+    if (!FONT_NAME_PATTERN.test(familyName.trim())) {
+      return { error: FONT_NAME_ERROR };
+    }
     if (fallback !== "sans-serif" && fallback !== "serif") {
       return { error: "Invalid fallback type." };
     }
     if (typeof url !== "string" || !url) {
       return { error: "Choose a font from the list first." };
     }
-    await saveFontToSlot(admin, slot, {
+    if (!isAllowedFontUrl(url)) {
+      return { error: "That file doesn't look like a font (.woff2, .woff, .ttf, .otf)." };
+    }
+    const error = await saveFontToSlot(admin, slot, {
       familyName: familyName.trim(),
       fallback,
       url,
     });
+    if (error) return { error };
     return { success: true, slot };
   }
 
@@ -238,11 +238,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (typeof familyName !== "string" || !familyName.trim()) {
     return { error: "Give this font a name first." };
   }
+  if (!FONT_NAME_PATTERN.test(familyName.trim())) {
+    return { error: FONT_NAME_ERROR };
+  }
   if (fallback !== "sans-serif" && fallback !== "serif") {
     return { error: "Invalid fallback type." };
   }
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Choose a font file first." };
+  }
+  if (!isFontUrl(file.name)) {
+    return { error: "Font files must be .woff2, .woff, .ttf or .otf." };
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    return { error: "That font file is too large (max 20 MB)." };
   }
 
   const stagedResponse = await admin.graphql(
@@ -353,11 +362,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     };
   }
 
-  await saveFontToSlot(admin, slot, {
+  const saveError = await saveFontToSlot(admin, slot, {
     familyName: familyName.trim(),
     fallback,
     url: createdFile.url,
   });
+  if (saveError) return { error: saveError };
 
   return { success: true, slot };
 };

@@ -1,3 +1,10 @@
 .cache
 build
 node_modules
+# never bake secrets or local state into the image
+.env
+.env.*
+.git
+.shopify
+*.sqlite
+*.sqlite-journal

@@ -21,9 +21,9 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Jewelry engraving</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Let customers personalize jewelry with a live engraving preview, right on your product page.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
@@ -39,16 +39,16 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Live preview</strong>. Customers see their text engraved on
+            the actual product photo — straight or around a ring — as they type.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Your fonts, your layout</strong>. Upload two fonts and place
+            the engraving zone per product in a visual editor.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Through to checkout</strong>. The engraved preview follows
+            the item into the cart, checkout and the order.
           </li>
         </ul>
       </div>

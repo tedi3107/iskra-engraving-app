@@ -6,5 +6,11 @@
     "home": {
       "recommendationText": "Recommended Product!"
     }
+  },
+  "engraving": {
+    "sold_out": "Sold out",
+    "adding_to_cart": "Adding to cart…",
+    "input_label": "Engraving",
+    "close": "Close"
   }
 }

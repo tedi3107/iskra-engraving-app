@@ -9,6 +9,7 @@ import {
   Transformer,
 } from "react-konva";
 import type Konva from "konva";
+import { layoutCurvedText } from "../lib/curved-text";
 
 type PixelGeometry = {
   x: number;
@@ -37,46 +38,19 @@ type EngravingCanvasProps = {
   onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
 };
 
-// Places each character of `text` along a circular arc, the same way the
-// storefront's SVG textPath does it — but computed by hand here, since
-// Konva has no built-in text-on-a-path. Angles follow the same convention
-// used everywhere else in this app: 0° is the rightmost point of the circle
-// (3 o'clock), increasing clockwise.
-//
-// Text drawn across the *bottom* half of the circle in the same direction
-// the angle increases would come out upside down (walk along the underside
-// of an arc and "up" points toward the circle's center, not away from it).
-// Reversing the direction of travel for that half — without changing where
-// the arc actually is — keeps every letter right-side up and outward-facing
-// no matter where around the ring it's placed.
-function getCurvedCharPlacements(
-  text: string,
-  centerX: number,
-  centerY: number,
-  radius: number,
-  startAngle: number,
-  arcLength: number,
-) {
-  const chars = Array.from(text);
-  const count = chars.length;
-  if (count === 0) return [];
+// Offscreen 2D context used only to measure glyph widths — the same
+// measureText() the storefront uses, so arc spacing matches it. Created
+// lazily: this module is only ever loaded in the browser (see below).
+let measureContext: CanvasRenderingContext2D | null | undefined;
 
-  const midAngle = (((startAngle + arcLength / 2) % 360) + 360) % 360;
-  const isBottomHalf = midAngle > 0 && midAngle < 180;
-  const effectiveStart = isBottomHalf ? startAngle + arcLength : startAngle;
-  const effectiveArc = isBottomHalf ? -arcLength : arcLength;
-
-  return chars.map((char, i) => {
-    const t = count === 1 ? 0.5 : i / (count - 1);
-    const angle = effectiveStart + effectiveArc * t;
-    const rad = (angle * Math.PI) / 180;
-    return {
-      char,
-      x: centerX + radius * Math.cos(rad),
-      y: centerY + radius * Math.sin(rad),
-      rotation: angle + 90,
-    };
-  });
+function measureGlyphWidths(chars: string[], font: string): number[] {
+  if (measureContext === undefined) {
+    measureContext = document.createElement("canvas").getContext("2d");
+  }
+  const ctx = measureContext;
+  if (!ctx) return chars.map(() => 0);
+  ctx.font = font;
+  return chars.map((ch) => ctx.measureText(ch).width);
 }
 
 // This file is the ONLY place that imports react-konva. Konva touches the
@@ -142,17 +116,29 @@ export default function EngravingCanvas({
       ? (fontSize / 100) * geometry.height
       : (fontSize / 100) * geometry.radius;
 
-  const curvedChars =
-    shape === "curved"
-      ? getCurvedCharPlacements(
-          previewText,
-          geometry.centerX,
-          geometry.centerY,
-          geometry.radius,
-          geometry.startAngle,
-          geometry.arcLength,
-        )
-      : [];
+  // Same layout as the storefront (lib/curved-text.ts mirrors
+  // engraving-preview-core.js): centered on the arc midpoint, spaced by real
+  // glyph widths. Recomputed on every render, so a font finishing loading
+  // (fontsReadyTick) re-measures with the real face.
+  const curvedChars = (() => {
+    if (shape !== "curved") return [];
+    const chars = Array.from(previewText);
+    const widths = measureGlyphWidths(chars, `${fontSizePx}px ${fontFamily}`);
+    return layoutCurvedText(
+      widths,
+      geometry.centerX,
+      geometry.centerY,
+      geometry.radius,
+      geometry.startAngle,
+      geometry.arcLength,
+    ).map((placement, i) => ({
+      char: chars[i],
+      width: widths[i],
+      x: placement.x,
+      y: placement.y,
+      rotation: placement.angle + 90,
+    }));
+  })();
 
   return (
     <Stage width={displayWidth} height={displayHeight}>
@@ -209,7 +195,7 @@ export default function EngravingCanvas({
                 text={c.char}
                 x={c.x}
                 y={c.y}
-                offsetX={fontSizePx / 4}
+                offsetX={c.width / 2}
                 offsetY={fontSizePx / 2}
                 rotation={c.rotation}
                 fontFamily={fontFamily}

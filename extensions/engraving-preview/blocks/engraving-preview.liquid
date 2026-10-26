@@ -8,23 +8,40 @@ assign img = product.featured_image
 <style>
   {% if shop_fonts.fontOne %}
   @font-face {
-    font-family: "{{ shop_fonts.fontOne.familyName }}";
-    src: url("{{ shop_fonts.fontOne.url }}");
+    font-family: {{ shop_fonts.fontOne.familyName | replace: '<', '' | json }};
+    src: url({{ shop_fonts.fontOne.url | replace: '<', '' | json }});
     font-display: swap;
   }
   {% endif %}
 
   {% if shop_fonts.fontTwo %}
   @font-face {
-    font-family: "{{ shop_fonts.fontTwo.familyName }}";
-    src: url("{{ shop_fonts.fontTwo.url }}");
+    font-family: {{ shop_fonts.fontTwo.familyName | replace: '<', '' | json }};
+    src: url({{ shop_fonts.fontTwo.url | replace: '<', '' | json }});
     font-display: swap;
   }
   {% endif %}
 </style>
 
+{% if block.settings.hide_theme_buy_buttons %}
+<style>
+  {%- comment -%}
+    Same effect as the manual theme edit described on the app's Setup page:
+    when this block can personalize (zone + image), the theme's own buy
+    buttons in this product section step aside. Off by default.
+  {%- endcomment -%}
+  #shopify-section-{{ section.id }} form[action*="/cart/add"] [type="submit"],
+  #shopify-section-{{ section.id }} form[action*="/cart/add"] .shopify-payment-button {
+    display: none !important;
+  }
+</style>
+{% endif %}
+
 <engraving-preview class="engraving-preview" data-product-id="{{ product.id }}"
   data-edit-label="{{ block.settings.edit_button_label | default: 'Edit' | escape }}"
+  data-money-format="{{ shop.money_format | escape }}"
+  data-sold-out-label="{{ 'engraving.sold_out' | t | escape }}"
+  data-adding-label="{{ 'engraving.adding_to_cart' | t | escape }}"
   data-storage-version="{{ 'engraving-preview.js' | asset_url | escape }}" {{ block.shopify_attributes }}>
   <style>
     #EngravingTrigger-{{ block.id }} {
@@ -155,27 +172,27 @@ assign img = product.featured_image
 
   <dialog class="engraving-preview__dialog" id="EngravingDialog-{{ block.id }}">
     <button type="button" class="engraving-preview__close" id="EngravingClose-{{ block.id }}"
-      aria-label="Close"><svg class="icon icon-close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
+      aria-label="{{ 'engraving.close' | t | escape }}"><svg class="icon icon-close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path>
       </svg></button>
 
     <div class="engraving-preview__dialog-body">
     <div class="engraving-preview__dialog-media">
-    <div class="engraving-preview__stage" id="EngravingStage-{{ block.id }}" data-shape="{{ zone.shape }}"
-      data-font-choice="{{ zone.fontChoice }}" data-uppercase-only="{{ zone.uppercaseOnly }}"
-      data-font-one-family="{{ shop_fonts.fontOne.familyName }}"
-      data-font-one-fallback="{{ shop_fonts.fontOne.fallback }}"
-      data-font-two-family="{{ shop_fonts.fontTwo.familyName }}"
-      data-font-two-fallback="{{ shop_fonts.fontTwo.fallback }}" data-one-font-size="{{ zone.fontOne.fontSize }}"
-      data-one-x="{{ zone.fontOne.x }}" data-one-y="{{ zone.fontOne.y }}" data-one-width="{{ zone.fontOne.width }}"
-      data-one-height="{{ zone.fontOne.height }}" data-one-center-x="{{ zone.fontOne.centerX }}"
-      data-one-center-y="{{ zone.fontOne.centerY }}" data-one-radius="{{ zone.fontOne.radius }}"
-      data-one-start-angle="{{ zone.fontOne.startAngle }}" data-one-arc-length="{{ zone.fontOne.arcLength }}"
-      data-two-font-size="{{ zone.fontTwo.fontSize }}" data-two-x="{{ zone.fontTwo.x }}"
-      data-two-y="{{ zone.fontTwo.y }}" data-two-width="{{ zone.fontTwo.width }}"
-      data-two-height="{{ zone.fontTwo.height }}" data-two-center-x="{{ zone.fontTwo.centerX }}"
-      data-two-center-y="{{ zone.fontTwo.centerY }}" data-two-radius="{{ zone.fontTwo.radius }}"
-      data-two-start-angle="{{ zone.fontTwo.startAngle }}" data-two-arc-length="{{ zone.fontTwo.arcLength }}">
+    <div class="engraving-preview__stage" id="EngravingStage-{{ block.id }}" data-shape="{{ zone.shape | escape }}"
+      data-font-choice="{{ zone.fontChoice | escape }}" data-uppercase-only="{{ zone.uppercaseOnly | escape }}"
+      data-font-one-family="{{ shop_fonts.fontOne.familyName | escape }}"
+      data-font-one-fallback="{{ shop_fonts.fontOne.fallback | escape }}"
+      data-font-two-family="{{ shop_fonts.fontTwo.familyName | escape }}"
+      data-font-two-fallback="{{ shop_fonts.fontTwo.fallback | escape }}" data-one-font-size="{{ zone.fontOne.fontSize | escape }}"
+      data-one-x="{{ zone.fontOne.x | escape }}" data-one-y="{{ zone.fontOne.y | escape }}" data-one-width="{{ zone.fontOne.width | escape }}"
+      data-one-height="{{ zone.fontOne.height | escape }}" data-one-center-x="{{ zone.fontOne.centerX | escape }}"
+      data-one-center-y="{{ zone.fontOne.centerY | escape }}" data-one-radius="{{ zone.fontOne.radius | escape }}"
+      data-one-start-angle="{{ zone.fontOne.startAngle | escape }}" data-one-arc-length="{{ zone.fontOne.arcLength | escape }}"
+      data-two-font-size="{{ zone.fontTwo.fontSize | escape }}" data-two-x="{{ zone.fontTwo.x | escape }}"
+      data-two-y="{{ zone.fontTwo.y | escape }}" data-two-width="{{ zone.fontTwo.width | escape }}"
+      data-two-height="{{ zone.fontTwo.height | escape }}" data-two-center-x="{{ zone.fontTwo.centerX | escape }}"
+      data-two-center-y="{{ zone.fontTwo.centerY | escape }}" data-two-radius="{{ zone.fontTwo.radius | escape }}"
+      data-two-start-angle="{{ zone.fontTwo.startAngle | escape }}" data-two-arc-length="{{ zone.fontTwo.arcLength | escape }}">
       <img class="engraving-preview__image" src="{{ img | image_url: width: 800 }}" alt="{{ img.alt | escape }}"
         width="{{ img.width }}" height="{{ img.height }}" loading="lazy" crossorigin="anonymous">
 
@@ -210,20 +227,28 @@ assign img = product.featured_image
 
     {% unless product.has_only_default_variant %}
     <div class="engraving-preview__variant-picker" id="EngravingVariantPicker-{{ block.id }}">
+      {% liquid
+        assign color_opt = block.settings.color_option_name | default: 'Material'
+        assign size_opt = block.settings.size_option_name | default: 'Size'
+        assign color_mf = block.settings.color_metafield | default: 'custom.material' | split: '.'
+        assign size_mf = block.settings.size_metafield | default: 'custom.size' | split: '.'
+        assign color_entries = product.metafields[color_mf[0]][color_mf[1]].value
+        assign size_entries = product.metafields[size_mf[0]][size_mf[1]].value
+      %}
       {% assign engraving_has_material = false %}
       {% assign engraving_has_size = false %}
       {% for option in product.options_with_values %}
-        {% if option.name == 'Material' %}{% assign engraving_has_material = true %}{% endif %}
-        {% if option.name == 'Size' %}{% assign engraving_has_size = true %}{% endif %}
+        {% if option.name == color_opt %}{% assign engraving_has_material = true %}{% endif %}
+        {% if option.name == size_opt %}{% assign engraving_has_size = true %}{% endif %}
       {% endfor %}
 
       {% if engraving_has_material or engraving_has_size %}
       <div class="engraving-preview__variant-row">
         {% for option in product.options_with_values %}
-          {% if option.name == 'Material' or option.name == 'Size' %}
+          {% if option.name == color_opt or option.name == size_opt %}
             <div class="engraving-preview__variant-option-group engraving-preview__variant-option-group--{{ option.name | handle }}">
               <span class="engraving-preview__variant-legend">
-                {{ option.name }}{% if option.name == 'Material' %} <strong data-selected-label>{{ option.selected_value }}</strong>{% endif %}
+                {{ option.name }}{% if option.name == color_opt %} <strong data-selected-label>{{ option.selected_value }}</strong>{% endif %}
               </span>
               <div class="engraving-preview__variant-pills engraving-preview__variant-pills--{{ option.name | handle }}"
                 data-option-position="{{ forloop.index }}"
@@ -232,14 +257,14 @@ assign img = product.featured_image
                   {% liquid
                     assign bgColor = nil
                     assign variantValue = nil
-                    if option.name == 'Material'
-                      for variantMaterial in product.metafields.custom.material.value
+                    if option.name == color_opt
+                      for variantMaterial in color_entries
                         if variantMaterial.name == value
                           assign bgColor = variantMaterial.color
                         endif
                       endfor
-                    elsif option.name == 'Size'
-                      for variantSize in product.metafields.custom.size.value
+                    elsif option.name == size_opt
+                      for variantSize in size_entries
                         if variantSize.size_name == value
                           assign variantValue = variantSize.size_value
                         endif
@@ -247,17 +272,17 @@ assign img = product.featured_image
                     endif
                   %}
                   <button type="button"
-                    class="engraving-preview__variant-pill{% if option.name == 'Material' %} engraving-preview__variant-pill--material{% elsif option.name == 'Size' %} engraving-preview__variant-pill--size{% endif %}"
+                    class="engraving-preview__variant-pill{% if option.name == color_opt %} engraving-preview__variant-pill--material{% elsif option.name == size_opt %} engraving-preview__variant-pill--size{% endif %}"
                     data-option-position="{{ forloop.parentloop.index }}"
                     data-option-name="{{ option.name | escape }}"
                     data-value="{{ value | escape }}"
-                    {% if option.name == 'Material' %}
+                    {% if option.name == color_opt %}
                       aria-label="{{ value | escape }}"
                       {% if bgColor %}style="background-color: {{ bgColor }};"{% endif %}
-                    {% elsif option.name == 'Size' and variantValue != blank %}
+                    {% elsif option.name == size_opt and variantValue != blank %}
                       style="order: {{ variantValue | times: 2 | plus: 1 | replace: '.0', '' }}"
                     {% endif %}>
-                    {% if option.name == 'Size' %}
+                    {% if option.name == size_opt %}
                       {{ variantValue | default: value }}
                     {% endif %}
                   </button>
@@ -270,7 +295,7 @@ assign img = product.featured_image
       {% endif %}
 
       {% for option in product.options_with_values %}
-        {% unless option.name == 'Material' or option.name == 'Size' %}
+        {% unless option.name == color_opt or option.name == size_opt %}
           <div class="engraving-preview__variant-option-group">
             <span class="engraving-preview__variant-legend">{{ option.name }}</span>
             <div class="engraving-preview__variant-pills" data-option-position="{{ forloop.index }}"
@@ -291,12 +316,12 @@ assign img = product.featured_image
     {% endunless %}
 
     <div class="engraving-preview__input-row">
-      <label for="EngravingInput-{{ block.id }}" class="engraving-preview__input-label">Engraving</label>
+      <label for="EngravingInput-{{ block.id }}" class="engraving-preview__input-label">{{ 'engraving.input_label' | t }}</label>
       <span class="engraving-preview__char-counter" id="EngravingCounter-{{ block.id }}">0/{{ zone.maxLength }}</span>
     </div>
     <input type="text" id="EngravingInput-{{ block.id }}" class="engraving-preview__input" name="properties[Engraving]"
-      maxlength="{{ zone.maxLength }}" placeholder="{{ block.settings.placeholder }}"
-      aria-label="{{ block.settings.label }}" autocomplete="off"
+      maxlength="{{ zone.maxLength }}" placeholder="{{ block.settings.placeholder | escape }}"
+      aria-label="{{ block.settings.label | escape }}" autocomplete="off"
       {% if zone.uppercaseOnly %}style="text-transform: uppercase;"{% endif %}>
 
     {% if shop_fonts.fontOne or shop_fonts.fontTwo %}
@@ -422,12 +447,13 @@ assign img = product.featured_image
           </g>
         </g>
       </svg>
-      <span>Adding to cart…</span>
+      <span>{{ 'engraving.adding_to_cart' | t }}</span>
     </div>
   </dialog>
 </engraving-preview>
 
 {{ 'engraving-preview.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'engraving-preview-core.js' | asset_url }}" defer></script>
 <script src="{{ 'engraving-preview.js' | asset_url }}" defer></script>
 
 {% endif %}
@@ -458,6 +484,13 @@ assign img = product.featured_image
 { "type": "color", "id": "quick_add_text", "label": "Text color", "default": "#ffffff" },
 { "type": "color", "id": "quick_add_text_hover", "label": "Text color (hover)", "default": "#ffffff" },
 { "type": "color", "id": "quick_add_border", "label": "Border color", "default": "#16233d" },
+{ "type": "header", "content": "Theme integration" },
+{ "type": "checkbox", "id": "hide_theme_buy_buttons", "label": "Hide the theme's own buy buttons on personalizable products", "info": "Replaces the manual theme edit from the app's Setup page. Leave off if your theme already does this.", "default": false },
+{ "type": "header", "content": "Variant options" },
+{ "type": "text", "id": "color_option_name", "label": "Color/material option name", "default": "Material" },
+{ "type": "text", "id": "color_metafield", "label": "Color swatch metafield (namespace.key)", "info": "List of entries with name and color fields.", "default": "custom.material" },
+{ "type": "text", "id": "size_option_name", "label": "Size option name", "default": "Size" },
+{ "type": "text", "id": "size_metafield", "label": "Size label metafield (namespace.key)", "info": "List of entries with size_name and size_value fields.", "default": "custom.size" },
 { "type": "header", "content": "Fonts" },
 { "type": "paragraph", "content": "Font 1 and Font 2 are uploaded once for the whole store in the app's Font settings page — this block just renders whichever one each product's engraving zone is set to use." }
 ]
