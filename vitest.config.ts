@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 // vitest setup (it needs a wasm build), so it is excluded here.
 export default defineConfig({
   test: {
-    include: ["app/**/*.test.ts", "extensions/engraving-preview/tests/**/*.test.ts"],
+    include: ["app/**/*.test.ts", "tests/storefront/**/*.test.ts"],
     exclude: ["node_modules", "extensions/engraving-cart-transform/**"],
   },
 });

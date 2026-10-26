@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 function load() {
-  const path = fileURLToPath(new URL("../assets/cart-engraving-images.js", import.meta.url));
+  const path = fileURLToPath(new URL("../../extensions/engraving-preview/assets/cart-engraving-images.js", import.meta.url));
   const mod: { exports: Record<string, unknown> } = { exports: {} };
   new Function("module", "exports", readFileSync(path, "utf8"))(mod, mod.exports);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
