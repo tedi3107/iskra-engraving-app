@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
+import { CART_TRANSFORM_FUNCTION_HANDLE } from "../cart-transform.server";
 
 // One-off admin utility: cartTransformCreate has to be called once per shop
 // (not once per app), so every new store installation needs this same
@@ -82,7 +83,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }`,
     {
       variables: {
-        functionHandle: "engraving-cart-transform",
+        functionHandle: CART_TRANSFORM_FUNCTION_HANDLE,
         blockOnFailure: false,
       },
     },
@@ -134,10 +135,11 @@ export default function SetupCartTransform() {
     <s-page heading="Cart Transform setup">
       <s-section heading="Cart transform for this store">
         <s-paragraph>
-          This has to be run once per store install — it&apos;s what lets the
-          engraved preview image show up at checkout. It&apos;s safe to open
-          this page again later; it won&apos;t create a duplicate if one already
-          exists.
+          The app activates this automatically when a store installs it —
+          it&apos;s what lets the engraved preview image show up at checkout.
+          Use this page to check the status, or to activate it manually if the
+          automatic step didn&apos;t run. It won&apos;t create a duplicate if
+          one already exists.
         </s-paragraph>
 
         {isChecking && <s-paragraph>Checking current status…</s-paragraph>}
@@ -240,7 +242,15 @@ export default function SetupCartTransform() {
         )}
       </s-section>
 
-      <s-section heading="Also needed: cart drawer & cart page (manual, per theme)">
+      <s-section heading="Also needed: cart drawer & cart page (per theme)">
+        <s-paragraph>
+          <s-text type="strong">No-code option:</s-text> in the theme editor,
+          open App embeds and turn on{" "}
+          <s-text type="strong">Engraved images in cart</s-text>. It swaps in
+          the engraved preview on Dawn-style cart pages and drawers. If your
+          theme&apos;s cart doesn&apos;t pick it up, use the manual edit below
+          instead (the two can be used together safely).
+        </s-paragraph>
         <s-paragraph>
           The cart transform above only affects checkout. The cart page and side
           cart drawer are rendered by the theme itself, so each new store&apos;s
@@ -288,7 +298,14 @@ export default function SetupCartTransform() {
         </s-paragraph>
       </s-section>
 
-      <s-section heading="Also needed: hide the theme's own buy buttons (manual, per theme)">
+      <s-section heading="Also needed: hide the theme's own buy buttons (per theme)">
+        <s-paragraph>
+          <s-text type="strong">No-code option:</s-text> in the theme editor,
+          select the Engraving preview block and turn on{" "}
+          <s-text type="strong">Hide the theme&apos;s own buy buttons on
+          personalizable products</s-text>. It applies the same rule as the
+          manual edit below.
+        </s-paragraph>
         <s-paragraph>
           When a product has both an engraving zone (Position Designer) and a
           featured image, the Personalize block replaces the normal buy-buttons

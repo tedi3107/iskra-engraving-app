@@ -6,6 +6,20 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import type Konva from "konva";
 import { authenticate } from "../shopify.server";
 import type EngravingCanvasComponent from "../components/EngravingCanvas";
+import {
+  DEFAULT_CURVED_GEOMETRY,
+  DEFAULT_STRAIGHT_GEOMETRY,
+  DEFAULT_ZONE,
+  EMPTY_GEOMETRY,
+  isDegenerate,
+  migrateZone,
+  parseZoneInput,
+  safeJsonParse,
+  toPercentGeometry,
+  toPixelGeometry,
+  type FontGeometry,
+  type Zone,
+} from "../lib/zone";
 
 const METAFIELD_NAMESPACE = "engraving";
 const METAFIELD_KEY = "zone";
@@ -19,96 +33,6 @@ export const FONT_CHOICES = [
   { value: "one", label: "Font 1", previewFamily: "'Great Vibes', cursive" },
   { value: "two", label: "Font 2", previewFamily: "'Playfair Display', serif" },
 ] as const;
-
-// Every field for both shapes lives on one flat object — `shape` says which
-// half is meaningful — because Font 1 and Font 2 each need a *complete*,
-// independent geometry (not just a font swap): a wide script and a compact
-// sans can need quite different boxes to sit well, so each font's box/curve
-// and font size are their own thing, not shared fields with one shape-typed
-// wrapper. `linked: true` (the default) keeps them mirrored — editing one
-// updates both — until the merchant deliberately turns that off.
-type FontGeometry = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  centerX: number;
-  centerY: number;
-  radius: number;
-  startAngle: number;
-  arcLength: number;
-  fontSize: number;
-};
-
-type Zone = {
-  shape: "straight" | "curved";
-  linked: boolean;
-  fontOne: FontGeometry;
-  fontTwo: FontGeometry;
-  fontChoice: "one" | "two";
-  maxLength: number;
-  uppercaseOnly: boolean;
-};
-
-const DEFAULT_STRAIGHT_GEOMETRY: FontGeometry = {
-  x: 30,
-  y: 42,
-  width: 40,
-  height: 16,
-  centerX: 50,
-  centerY: 50,
-  radius: 25,
-  startAngle: 200,
-  arcLength: 140,
-  fontSize: 55,
-};
-
-const DEFAULT_CURVED_GEOMETRY: FontGeometry = {
-  ...DEFAULT_STRAIGHT_GEOMETRY,
-  fontSize: 60,
-};
-
-const DEFAULT_ZONE: Zone = {
-  shape: "straight",
-  linked: true,
-  fontOne: DEFAULT_STRAIGHT_GEOMETRY,
-  fontTwo: DEFAULT_STRAIGHT_GEOMETRY,
-  fontChoice: "one",
-  maxLength: 24,
-  uppercaseOnly: false,
-};
-
-// Saved zones from before per-font positioning existed are a flat object
-// with the geometry fields directly on it (no fontOne/fontTwo split). They
-// were inherently "linked" — there was only one position — so lifting the
-// same geometry into both slots reproduces the old behavior exactly.
-function migrateZone(raw: unknown): Zone {
-  if (!raw || typeof raw !== "object") return DEFAULT_ZONE;
-  if ("fontOne" in raw) {
-    const existing = raw as Zone;
-    // Zones saved before uppercaseOnly existed won't have the field at
-    // all — undefined is falsy in the checks that use it, but coercing
-    // it explicitly here keeps the value a real boolean everywhere else
-    // (React state, the checkbox's checked prop) instead of leaving an
-    // undefined to quietly do the right thing by accident.
-    return { ...existing, uppercaseOnly: existing.uppercaseOnly ?? false };
-  }
-  const old = raw as FontGeometry & { shape: Zone["shape"]; fontChoice: Zone["fontChoice"]; maxLength: number };
-  const geom: FontGeometry = { ...DEFAULT_STRAIGHT_GEOMETRY, ...old };
-  return {
-    shape: old.shape,
-    linked: true,
-    fontOne: geom,
-    fontTwo: geom,
-    fontChoice: old.fontChoice,
-    maxLength: old.maxLength,
-    uppercaseOnly: false,
-  };
-}
-
-function isDegenerate(shape: Zone["shape"], g: FontGeometry): boolean {
-  return shape === "straight" ? g.width <= 0 || g.height <= 0 : g.radius <= 0;
-}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -124,12 +48,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
   const shopFontsJson = await shopFontsResponse.json();
   const shopFontsValue = shopFontsJson.data?.shop?.metafield?.value as string | undefined;
-  const shopFonts = shopFontsValue
-    ? (JSON.parse(shopFontsValue) as {
-        fontOne?: { familyName: string; url: string };
-        fontTwo?: { familyName: string; url: string };
-      })
-    : {};
+  const shopFonts = (safeJsonParse(shopFontsValue) ?? {}) as {
+    fontOne?: { familyName: string; url: string };
+    fontTwo?: { familyName: string; url: string };
+  };
 
   if (!productId) return { productId: null, zone: null, shopFonts };
 
@@ -147,7 +69,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const json = await response.json();
   const value = json.data?.product?.metafield?.value as string | undefined;
-  return { productId, zone: value ? migrateZone(JSON.parse(value)) : null, shopFonts };
+  const savedZone = safeJsonParse(value);
+  return { productId, zone: savedZone ? migrateZone(savedZone) : null, shopFonts };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -158,6 +81,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (typeof productId !== "string" || typeof zoneJson !== "string") {
     return { userErrors: [{ message: "Missing product or zone data" }] };
+  }
+  if (!/^gid:\/\/shopify\/Product\/\d+$/.test(productId)) {
+    return { userErrors: [{ message: "Invalid product." }] };
+  }
+  const zone = parseZoneInput(zoneJson);
+  if (!zone) {
+    return { userErrors: [{ message: "The engraving zone is invalid — please adjust it and save again." }] };
   }
 
   const response = await admin.graphql(
@@ -176,7 +106,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             namespace: METAFIELD_NAMESPACE,
             key: METAFIELD_KEY,
             type: "json",
-            value: zoneJson,
+            value: JSON.stringify(zone),
           },
         ],
       },
@@ -184,53 +114,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   );
 
   const json = await response.json();
-  return json.data?.metafieldsSet;
+  // A GraphQL-level failure (throttling, permissions) has no metafieldsSet
+  // payload at all — report it instead of silently showing nothing.
+  return (
+    json.data?.metafieldsSet ?? {
+      userErrors: [{ message: "Could not save the engraving zone. Please try again." }],
+    }
+  );
 };
 
 type PickedProduct = { id: string; title: string; imageUrl: string | null };
-
-const EMPTY_GEOMETRY: FontGeometry = {
-  x: 0,
-  y: 0,
-  width: 0,
-  height: 0,
-  centerX: 0,
-  centerY: 0,
-  radius: 0,
-  startAngle: DEFAULT_STRAIGHT_GEOMETRY.startAngle,
-  arcLength: DEFAULT_STRAIGHT_GEOMETRY.arcLength,
-  fontSize: DEFAULT_STRAIGHT_GEOMETRY.fontSize,
-};
-
-function toPixelGeometry(saved: FontGeometry, image: HTMLImageElement): FontGeometry {
-  return {
-    x: image.width * (saved.x / 100),
-    y: image.height * (saved.y / 100),
-    width: image.width * (saved.width / 100),
-    height: image.height * (saved.height / 100),
-    centerX: image.width * (saved.centerX / 100),
-    centerY: image.height * (saved.centerY / 100),
-    radius: image.width * (saved.radius / 100),
-    startAngle: saved.startAngle,
-    arcLength: saved.arcLength,
-    fontSize: saved.fontSize,
-  };
-}
-
-function toPercentGeometry(pixel: FontGeometry, image: HTMLImageElement): FontGeometry {
-  return {
-    x: +((pixel.x / image.width) * 100).toFixed(1),
-    y: +((pixel.y / image.height) * 100).toFixed(1),
-    width: +((pixel.width / image.width) * 100).toFixed(1),
-    height: +((pixel.height / image.height) * 100).toFixed(1),
-    centerX: +((pixel.centerX / image.width) * 100).toFixed(1),
-    centerY: +((pixel.centerY / image.height) * 100).toFixed(1),
-    radius: +((pixel.radius / image.width) * 100).toFixed(1),
-    startAngle: Math.round(pixel.startAngle),
-    arcLength: Math.round(pixel.arcLength),
-    fontSize: pixel.fontSize,
-  };
-}
 
 const DEFAULT_PREVIEW_TEXT = "Your Text";
 

@@ -34,8 +34,17 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Validate Prisma
-        run: npx prisma generate && npx prisma validate
+      - name: Unit tests (app + storefront core)
+        run: npm test
+
+      - name: Cart transform unit tests
+        run: npx vitest run --root extensions/engraving-cart-transform tests/cart_transform_run.test.ts
+
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Storefront browser tests
+        run: npm run test:e2e
 
       - name: Build application
         run: npm run build

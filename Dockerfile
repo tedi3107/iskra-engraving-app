@@ -15,4 +15,7 @@ COPY . .
 
 RUN npm run build
 
+# Don't run the app as root inside the container.
+USER node
+
 CMD ["npm", "run", "docker-start"]

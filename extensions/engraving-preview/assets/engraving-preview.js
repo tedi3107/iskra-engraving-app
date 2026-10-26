@@ -1,6 +1,14 @@
 (function () {
+  // Pure helpers (geometry, crop, colors, money, variant matching) live in
+  // engraving-preview-core.js, loaded just before this file.
+  var core = window.IskraEngravingCore;
+
   function bootEngravingPreview(host) {
     if (!host || host._booted) return;
+    if (!core) {
+      console.error("[engraving-preview] engraving-preview-core.js is not loaded");
+      return;
+    }
 
     var input = host.querySelector(".engraving-preview__input");
 
@@ -204,36 +212,21 @@
         var cy = pxY(geomAttr("center-y"));
         var startDeg = geomAttr("start-angle");
         var arcDeg = geomAttr("arc-length");
-        var midAngle = (((startDeg + arcDeg / 2) % 360) + 360) % 360;
-        var isBottomHalf = midAngle > 0 && midAngle < 180;
         var chars = Array.from(text);
         ctx.font = fontPx2 + "px " + currentFontFamilyCss();
 
         var charWidths = chars.map(function (ch) {
           return ctx.measureText(ch).width;
         });
-        var totalWidth = charWidths.reduce(function (a, b) {
-          return a + b;
-        }, 0);
-        var totalAngleDeg = (totalWidth / r) * (180 / Math.PI);
-        var directionSign = isBottomHalf ? -1 : 1;
-        var centerAngle = startDeg + arcDeg / 2;
-        var cursorAngle = centerAngle - directionSign * (totalAngleDeg / 2);
-
-        chars.forEach(function (ch, i) {
-          var halfCharAngle = (charWidths[i] / 2 / r) * (180 / Math.PI);
-          var angle = cursorAngle + directionSign * halfCharAngle;
-          var rad = (angle * Math.PI) / 180;
-          var x = cx + r * Math.cos(rad);
-          var y = cy + r * Math.sin(rad);
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(((angle + 90) * Math.PI) / 180);
-          ctx.fillText(ch, 0, 0);
-          ctx.restore();
-          cursorAngle +=
-            directionSign * ((charWidths[i] / r) * (180 / Math.PI));
-        });
+        core
+          .layoutCurvedText(charWidths, cx, cy, r, startDeg, arcDeg)
+          .forEach(function (placement, i) {
+            ctx.save();
+            ctx.translate(placement.x, placement.y);
+            ctx.rotate(((placement.angle + 90) * Math.PI) / 180);
+            ctx.fillText(chars[i], 0, 0);
+            ctx.restore();
+          });
       }
       ctx.restore();
     }
@@ -295,20 +288,7 @@
     // variant switch: the JSON url and the theme's <img> src look
     // unrelated even though they are the same photo.
     function imageIdentity(src) {
-      if (!src) return "";
-      var path = src.split("?")[0];
-      var slash = path.lastIndexOf("/");
-      var filename = slash >= 0 ? path.slice(slash + 1) : path;
-      try {
-        filename = decodeURIComponent(filename);
-      } catch (e) {
-        // keep the raw filename if it isn't valid URI encoding
-      }
-      filename = filename.replace(
-        /_\d+x(\d+)?(_crop_[a-z]+)?(?=\.[^.]+$)/i,
-        "",
-      );
-      return filename.toLowerCase();
+      return core.imageIdentity(src);
     }
 
     function collectImageUrls(img) {
@@ -621,18 +601,6 @@
       });
     }
 
-    function objectPositionAxis(part, fallback) {
-      if (!part) return fallback;
-      if (part === "left" || part === "top") return 0;
-      if (part === "center") return 0.5;
-      if (part === "right" || part === "bottom") return 1;
-      if (/%$/.test(part)) {
-        var pct = parseFloat(part);
-        return isNaN(pct) ? fallback : pct / 100;
-      }
-      return fallback;
-    }
-
     function objectPositionFactors(img) {
       var raw = "";
       try {
@@ -640,24 +608,12 @@
       } catch (e) {
         raw = "";
       }
-      var parts = raw.trim().split(/\s+/);
-      if (parts.length === 1) {
-        var only = parts[0];
-        if (only === "top" || only === "bottom")
-          return { x: 0.5, y: objectPositionAxis(only, 0.5) };
-        return { x: objectPositionAxis(only, 0.5), y: 0.5 };
-      }
-      return {
-        x: objectPositionAxis(parts[0], 0.5),
-        y: objectPositionAxis(parts[1], 0.5),
-      };
+      return core.parseObjectPosition(raw);
     }
 
     // Same source-photo UV for every overlay. Zone percents are of the
     // full file; this is how CSS actually paints that file into THIS
-    // <img> box (object-fit + object-position). Zoom gets no special
-    // crop — if the photo sits in the same place on the metal here as
-    // on the PDP image, the letter will too.
+    // <img> box (object-fit + object-position).
     function cropFromRenderedImage(img, boxW, boxH) {
       var naturalW = img && img.naturalWidth;
       var naturalH = img && img.naturalHeight;
@@ -668,36 +624,14 @@
       } catch (e) {
         fit = "fill";
       }
-      var scaleX;
-      var scaleY;
-      if (fit === "contain") {
-        var contain = Math.min(boxW / naturalW, boxH / naturalH);
-        scaleX = contain;
-        scaleY = contain;
-      } else if (fit === "scale-down") {
-        var down = Math.min(1, boxW / naturalW, boxH / naturalH);
-        scaleX = down;
-        scaleY = down;
-      } else if (fit === "none") {
-        scaleX = 1;
-        scaleY = 1;
-      } else if (fit === "cover") {
-        var cover = Math.max(boxW / naturalW, boxH / naturalH);
-        scaleX = cover;
-        scaleY = cover;
-      } else {
-        scaleX = boxW / naturalW;
-        scaleY = boxH / naturalH;
-      }
-      var pos = objectPositionFactors(img);
-      return {
-        naturalW: naturalW,
-        naturalH: naturalH,
-        scaleX: scaleX,
-        scaleY: scaleY,
-        offsetX: (naturalW * scaleX - boxW) * pos.x,
-        offsetY: (naturalH * scaleY - boxH) * pos.y,
-      };
+      return core.computeCrop(
+        naturalW,
+        naturalH,
+        boxW,
+        boxH,
+        fit,
+        objectPositionFactors(img),
+      );
     }
 
     function renderToTarget(target) {
@@ -758,9 +692,19 @@
       externalTargets.forEach(renderToTarget);
     }
 
+    // Many things ask for a full re-render in the same tick (a keystroke,
+    // a font load, a variant swap, a ResizeObserver callback). Coalescing
+    // them to one per animation frame keeps typing smooth and avoids
+    // redoing the WebGL pass several times for an identical result.
+    var renderAllQueued = false;
     function renderAllPreviews() {
-      renderInternal();
-      renderExternal();
+      if (renderAllQueued) return;
+      renderAllQueued = true;
+      requestAnimationFrame(function () {
+        renderAllQueued = false;
+        renderInternal();
+        renderExternal();
+      });
     }
 
     var fontPicker = host.querySelector(".engraving-preview__font-picker");
@@ -795,6 +739,7 @@
         mirrorToCartForms("properties[Engraving Font]", family);
       }
 
+      invalidatePendingUpload();
       saveEngravingDraft({ fontChoice: choice });
     }
 
@@ -874,12 +819,7 @@
     }
 
     function toHex(rgb) {
-      function h(n) {
-        n = Math.max(0, Math.min(255, n));
-        var s = n.toString(16);
-        return s.length === 1 ? "0" + s : s;
-      }
-      return "#" + h(rgb.r) + h(rgb.g) + h(rgb.b);
+      return core.toHex(rgb);
     }
 
     function sampleAndApplyColor(imgOrUrl) {
@@ -962,6 +902,7 @@
     }
 
     input.addEventListener("input", function () {
+      invalidatePendingUpload();
       refreshExternalTargets();
       renderAllPreviews();
     });
@@ -1043,8 +984,11 @@
       return null;
     }
 
+    var moneyFormat = host.getAttribute("data-money-format") || "";
+    var soldOutLabel = host.getAttribute("data-sold-out-label") || "Sold out";
+
     function formatMoney(cents) {
-      return "$" + (cents / 100).toFixed(2);
+      return core.formatMoney(cents, moneyFormat);
     }
 
     function findVariantData(variantId) {
@@ -1056,36 +1000,16 @@
     }
 
     function findVariantByOptions(options) {
-      for (var i = 0; i < variantsData.length; i++) {
-        var candidate = variantsData[i];
-        var match = true;
-        for (var o = 0; o < options.length; o++) {
-          if (String(candidate.options[o]) !== String(options[o])) {
-            match = false;
-            break;
-          }
-        }
-        if (match) return candidate;
-      }
-      return null;
+      return core.findVariantByOptions(variantsData, options);
     }
 
     function optionValueHasStock(optionIndex, value, selectedOptions) {
-      for (var i = 0; i < variantsData.length; i++) {
-        var candidate = variantsData[i];
-        if (!candidate.available) continue;
-        if (String(candidate.options[optionIndex]) !== String(value)) continue;
-        var matchesPrior = true;
-        for (var o = 0; o < optionIndex; o++) {
-          if (selectedOptions[o] == null) continue;
-          if (String(candidate.options[o]) !== String(selectedOptions[o])) {
-            matchesPrior = false;
-            break;
-          }
-        }
-        if (matchesPrior) return true;
-      }
-      return false;
+      return core.optionValueHasStock(
+        variantsData,
+        optionIndex,
+        value,
+        selectedOptions,
+      );
     }
 
     function currentVariantIsAvailable() {
@@ -1098,7 +1022,7 @@
       var soldOut = !!(current && current.available === false);
       if (variantPriceEl && current) {
         variantPriceEl.textContent = soldOut
-          ? "Sold out"
+          ? soldOutLabel
           : formatMoney(current.price);
       }
       host.classList.toggle("engraving-preview--sold-out", soldOut);
@@ -1321,24 +1245,12 @@
     }
 
     function findVariantWithOption(optionIndex, value, selectedOptions) {
-      var best = null;
-      var bestScore = -1;
-      for (var i = 0; i < variantsData.length; i++) {
-        var candidate = variantsData[i];
-        if (String(candidate.options[optionIndex]) !== String(value)) continue;
-        var score = 0;
-        for (var o = 0; o < selectedOptions.length; o++) {
-          if (o === optionIndex || selectedOptions[o] == null) continue;
-          if (String(candidate.options[o]) === String(selectedOptions[o]))
-            score += 2;
-        }
-        if (candidate.featured_media_id) score += 1;
-        if (score > bestScore) {
-          best = candidate;
-          bestScore = score;
-        }
-      }
-      return best;
+      return core.findVariantWithOption(
+        variantsData,
+        optionIndex,
+        value,
+        selectedOptions,
+      );
     }
 
     function applyVariant(variant) {
@@ -1453,6 +1365,7 @@
     }
 
     function swapToVariantImage(variantId) {
+      invalidatePendingUpload();
       syncVariantPicker(variantId);
 
       var url = variantImages[String(variantId)];
@@ -1540,7 +1453,25 @@
           swapToVariantImage(variant.id);
         });
       }
-      host._variantPoll = setInterval(checkVariantChange, 400);
+      // Fallback for themes that change the variant id silently (no event at
+      // all): poll the id field — fast (400ms) for a few seconds after the
+      // customer interacts with the page, slow (2s) when idle, and not at
+      // all while the tab is hidden. Every real variant change follows an
+      // interaction, so detection stays as quick as before without waking
+      // the page 2.5 times a second forever.
+      var lastInteraction = Date.now();
+      host._markInteraction = function () {
+        lastInteraction = Date.now();
+      };
+      ["click", "change", "input", "keyup", "touchend"].forEach(function (type) {
+        document.addEventListener(type, host._markInteraction, true);
+      });
+      var variantPollTick = function () {
+        if (!document.hidden) checkVariantChange();
+        var idle = Date.now() - lastInteraction > 5000;
+        host._variantPoll = setTimeout(variantPollTick, idle ? 2000 : 400);
+      };
+      host._variantPoll = setTimeout(variantPollTick, 400);
     }
 
     var trigger = host.querySelector(".engraving-preview__trigger");
@@ -1566,7 +1497,9 @@
       if (!quickAddBtn) return;
       quickAddBtn.classList.toggle("engraving-preview__quick-add--loading", on);
       if (quickAddLabel)
-        quickAddLabel.textContent = on ? "Adding to cart…" : baseQuickAddLabel;
+        quickAddLabel.textContent = on
+          ? host.getAttribute("data-adding-label") || "Adding to cart…"
+          : baseQuickAddLabel;
     }
 
     // True for the whole upload + add-to-cart sequence, triggered from
@@ -1577,6 +1510,19 @@
     // already in progress, and a second click on either add button
     // can't fire a second, overlapping upload/add-to-cart.
     var isProcessing = false;
+
+    // The captured preview is a snapshot of one specific combination of
+    // text + font + variant photo. Once any of those change, a snapshot
+    // (or an in-flight upload for it) taken earlier no longer describes
+    // what the customer will actually order, so it is dropped here — the
+    // next add-to-cart (or closing the dialog) takes a fresh one instead
+    // of reusing a stale promise. Left alone while an upload/add is
+    // already running, since that one belongs to the click in progress.
+    function invalidatePendingUpload() {
+      if (isProcessing) return;
+      pendingUpload = null;
+      clearFromCartForms("properties[_Engraved Preview]");
+    }
 
     // Once there's something typed, the trigger reads "Edit" (reopening
     // the same dialog to change it) rather than "Personalize", picking
@@ -1603,7 +1549,7 @@
     if (trigger && dialogEl) {
       trigger.addEventListener("click", function () {
         dialogEl.showModal();
-        clearFromCartForms("properties[_Engraved Preview]");
+        invalidatePendingUpload();
         renderInternal();
       });
       dialogEl.addEventListener("click", function (e) {
@@ -1683,6 +1629,7 @@
         })
         .then(function (data) {
           openSideCartBestEffort(data);
+          pendingUpload = null;
           finishProcessing();
           // The draft has served its purpose once the order actually
           // goes through — clearing the input itself (not just the
@@ -1809,69 +1756,61 @@
     }
 
     function highlightFromBase(base) {
-      return [
-        Math.min(1, base[0] * 0.35 + 0.65),
-        Math.min(1, base[1] * 0.35 + 0.65),
-        Math.min(1, base[2] * 0.35 + 0.65),
-      ];
+      return core.highlightFromBase(base);
     }
 
     function hexToRgb01(hex) {
-      var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
-        hex || "#96731f",
-      );
-      return m
-        ? [
-            parseInt(m[1], 16) / 255,
-            parseInt(m[2], 16) / 255,
-            parseInt(m[3], 16) / 255,
-          ]
-        : [0.588, 0.451, 0.122];
+      return core.hexToRgb01(hex);
     }
 
-    function renderEngravedLighting(silhouette, baseColorHex) {
-      var w = silhouette.width;
-      var h = silhouette.height;
+    // One WebGL context for this block's whole lifetime, created on first
+    // use and reused for every render. Previously each render (every
+    // keystroke, resize, ResizeObserver tick) created a brand-new context
+    // and never released it; browsers cap live contexts at roughly 16 and
+    // start dropping the oldest, which showed up as lost/blank previews.
+    // The returned canvas is shared too, so callers must copy it out
+    // (drawImage) straight away — which every caller already does.
+    var lighting = null;
+
+    var LIGHTING_VS =
+      "attribute vec2 aPos; varying vec2 vUv;" +
+      "void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }";
+    var LIGHTING_FS =
+      "precision highp float;" +
+      "uniform sampler2D uHeight; uniform vec2 uTexel;" +
+      "uniform vec3 uLightDir; uniform vec3 uBase; uniform vec3 uHi;" +
+      "varying vec2 vUv;" +
+      "void main() {" +
+      "  vec2 uv = vec2(vUv.x, 1.0 - vUv.y);" +
+      "  float h = texture2D(uHeight, uv).a;" +
+      "  float hL = texture2D(uHeight, uv - vec2(uTexel.x, 0.0)).a;" +
+      "  float hR = texture2D(uHeight, uv + vec2(uTexel.x, 0.0)).a;" +
+      "  float hD = texture2D(uHeight, uv - vec2(0.0, uTexel.y)).a;" +
+      "  float hU = texture2D(uHeight, uv + vec2(0.0, uTexel.y)).a;" +
+      "  float strength = 14.0;" +
+      "  vec3 normal = normalize(vec3((hL - hR) * strength, (hD - hU) * strength, 1.0));" +
+      "  vec3 lightDir = normalize(uLightDir);" +
+      "  float diffuse = max(dot(normal, lightDir), 0.0);" +
+      "  vec3 viewDir = vec3(0.0, 0.0, 1.0);" +
+      "  vec3 halfDir = normalize(lightDir + viewDir);" +
+      "  float specular = pow(max(dot(normal, halfDir), 0.0), 24.0);" +
+      "  vec3 color = uBase * (0.35 + 0.75 * diffuse) + uHi * specular * 1.1;" +
+      "  gl_FragColor = vec4(color, h);" +
+      "}";
+
+    function createLightingContext() {
       var out = document.createElement("canvas");
-      out.width = w;
-      out.height = h;
       var gl = out.getContext("webgl");
       if (!gl) return null;
 
-      var vsSource =
-        "attribute vec2 aPos; varying vec2 vUv;" +
-        "void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }";
-      var fsSource =
-        "precision highp float;" +
-        "uniform sampler2D uHeight; uniform vec2 uTexel;" +
-        "uniform vec3 uLightDir; uniform vec3 uBase; uniform vec3 uHi;" +
-        "varying vec2 vUv;" +
-        "void main() {" +
-        "  vec2 uv = vec2(vUv.x, 1.0 - vUv.y);" +
-        "  float h = texture2D(uHeight, uv).a;" +
-        "  float hL = texture2D(uHeight, uv - vec2(uTexel.x, 0.0)).a;" +
-        "  float hR = texture2D(uHeight, uv + vec2(uTexel.x, 0.0)).a;" +
-        "  float hD = texture2D(uHeight, uv - vec2(0.0, uTexel.y)).a;" +
-        "  float hU = texture2D(uHeight, uv + vec2(0.0, uTexel.y)).a;" +
-        "  float strength = 14.0;" +
-        "  vec3 normal = normalize(vec3((hL - hR) * strength, (hD - hU) * strength, 1.0));" +
-        "  vec3 lightDir = normalize(uLightDir);" +
-        "  float diffuse = max(dot(normal, lightDir), 0.0);" +
-        "  vec3 viewDir = vec3(0.0, 0.0, 1.0);" +
-        "  vec3 halfDir = normalize(lightDir + viewDir);" +
-        "  float specular = pow(max(dot(normal, halfDir), 0.0), 24.0);" +
-        "  vec3 color = uBase * (0.35 + 0.75 * diffuse) + uHi * specular * 1.1;" +
-        "  gl_FragColor = vec4(color, h);" +
-        "}";
-
       function compile(type, src) {
-        var s = gl.createShader(type);
-        gl.shaderSource(s, src);
-        gl.compileShader(s);
-        return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
+        var sh = gl.createShader(type);
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
       }
-      var vs = compile(gl.VERTEX_SHADER, vsSource);
-      var fs = compile(gl.FRAGMENT_SHADER, fsSource);
+      var vs = compile(gl.VERTEX_SHADER, LIGHTING_VS);
+      var fs = compile(gl.FRAGMENT_SHADER, LIGHTING_FS);
       if (!vs || !fs) return null;
       var prog = gl.createProgram();
       gl.attachShader(prog, vs);
@@ -1890,6 +1829,65 @@
 
       var tex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+      gl.uniform1i(gl.getUniformLocation(prog, "uHeight"), 0);
+      gl.uniform3f(gl.getUniformLocation(prog, "uLightDir"), -0.6, 0.6, 0.5);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.clearColor(0, 0, 0, 0);
+
+      var ctxInfo = {
+        out: out,
+        gl: gl,
+        tex: tex,
+        uTexel: gl.getUniformLocation(prog, "uTexel"),
+        uBase: gl.getUniformLocation(prog, "uBase"),
+        uHi: gl.getUniformLocation(prog, "uHi"),
+      };
+      // If the browser reclaims the context, drop the cache so the next
+      // render builds a fresh one (the caller falls back to flat colour
+      // for that single frame).
+      out.addEventListener(
+        "webglcontextlost",
+        function (e) {
+          e.preventDefault();
+          if (lighting === ctxInfo) lighting = null;
+        },
+        false,
+      );
+      return ctxInfo;
+    }
+
+    function releaseLightingContext() {
+      if (!lighting) return;
+      try {
+        var ext = lighting.gl.getExtension("WEBGL_lose_context");
+        if (ext) ext.loseContext();
+      } catch (e) {
+        // already lost or unsupported — nothing to release
+      }
+      lighting = null;
+    }
+
+    function renderEngravedLighting(silhouette, baseColorHex) {
+      var w = silhouette.width;
+      var h = silhouette.height;
+      if (!lighting || lighting.gl.isContextLost()) {
+        lighting = createLightingContext();
+      }
+      if (!lighting) return null;
+
+      var out = lighting.out;
+      var gl = lighting.gl;
+      // Assigning width/height also clears the drawing buffer, which is
+      // exactly what a fresh canvas used to give us.
+      out.width = w;
+      out.height = h;
+
+      gl.bindTexture(gl.TEXTURE_2D, lighting.tex);
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
@@ -1898,27 +1896,14 @@
         gl.UNSIGNED_BYTE,
         silhouette,
       );
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
       var base = hexToRgb01(baseColorHex);
       var hi = highlightFromBase(base);
-      gl.uniform1i(gl.getUniformLocation(prog, "uHeight"), 0);
-      gl.uniform2f(gl.getUniformLocation(prog, "uTexel"), 1 / w, 1 / h);
-      gl.uniform3f(gl.getUniformLocation(prog, "uLightDir"), -0.6, 0.6, 0.5);
-      gl.uniform3f(
-        gl.getUniformLocation(prog, "uBase"),
-        base[0],
-        base[1],
-        base[2],
-      );
-      gl.uniform3f(gl.getUniformLocation(prog, "uHi"), hi[0], hi[1], hi[2]);
+      gl.uniform2f(lighting.uTexel, 1 / w, 1 / h);
+      gl.uniform3f(lighting.uBase, base[0], base[1], base[2]);
+      gl.uniform3f(lighting.uHi, hi[0], hi[1], hi[2]);
 
       gl.viewport(0, 0, w, h);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
@@ -1981,27 +1966,66 @@
       });
     }
 
-    function uploadEngravingImage() {
-      var timeout = new Promise(function (resolve) {
-        setTimeout(function () {
-          resolve(null);
-        }, 8000);
+    // Same overall budget as before (8s from the click): capture, upload
+    // and — if Shopify is still processing the image when the upload
+    // returns — polling its status. Past the deadline the item is added
+    // without a preview rather than keeping the customer waiting.
+    var UPLOAD_DEADLINE_MS = 8000;
+    var UPLOAD_ENDPOINT = "/apps/engraving/upload-preview";
+
+    function delay(ms) {
+      return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
       });
-      return Promise.race([captureEngravingSnapshot(), timeout])
+    }
+
+    function pollPreviewStatus(id, deadline) {
+      if (Date.now() + 700 >= deadline) return Promise.resolve(null);
+      return delay(700)
+        .then(function () {
+          return fetch(UPLOAD_ENDPOINT + "?id=" + encodeURIComponent(id), {
+            headers: { Accept: "application/json" },
+          });
+        })
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (data) {
+          if (data && data.url) return data;
+          if (data && data.pending) return pollPreviewStatus(id, deadline);
+          return null;
+        });
+    }
+
+    function uploadEngravingImage() {
+      var deadline = Date.now() + UPLOAD_DEADLINE_MS;
+      var timeout = delay(UPLOAD_DEADLINE_MS).then(function () {
+        return null;
+      });
+      var work = captureEngravingSnapshot()
         .then(function (blob) {
           if (!blob) return null;
           var uploadForm = new FormData();
           uploadForm.append("image", blob, "engraving.jpg");
-          return Promise.race([
-            fetch("/apps/engraving/upload-preview", {
-              method: "POST",
-              body: uploadForm,
-            }).then(function (res) {
-              return res.json();
-            }),
-            timeout,
-          ]);
+          return fetch(UPLOAD_ENDPOINT, {
+            method: "POST",
+            body: uploadForm,
+          }).then(function (res) {
+            return res.json();
+          });
         })
+        .then(function (data) {
+          if (data && !data.url && data.pending && data.id) {
+            return pollPreviewStatus(data.id, deadline);
+          }
+          return data;
+        })
+        // Settle quietly even if this loses the race to the deadline, so a
+        // late network error doesn't surface as an unhandled rejection.
+        .catch(function () {
+          return null;
+        });
+      return Promise.race([work, timeout])
         .then(function (data) {
           if (data && data.url) {
             mirrorToCartForms("properties[_Engraved Preview]", data.url);
@@ -2062,8 +2086,14 @@
 
     host._cleanup = function () {
       if (host._variantPoll) {
-        clearInterval(host._variantPoll);
+        clearTimeout(host._variantPoll);
         host._variantPoll = null;
+      }
+      if (host._markInteraction) {
+        ["click", "change", "input", "keyup", "touchend"].forEach(function (type) {
+          document.removeEventListener(type, host._markInteraction, true);
+        });
+        host._markInteraction = null;
       }
       if (host._overlayObserver) {
         host._overlayObserver.disconnect();
@@ -2079,6 +2109,7 @@
         window.removeEventListener("resize", host._onResize);
         host._onResize = null;
       }
+      releaseLightingContext();
     };
   }
 
