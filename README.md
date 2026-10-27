@@ -13,6 +13,7 @@ Built on Shopify's React Router app template (see `LICENSE.md`).
 | Admin app | `app/routes/app.*` | Status dashboard, **Font settings** (two store-wide fonts), **Position designer** (engraving zone per product, Konva canvas), **Setup cart transform**. |
 | Storefront block | `extensions/engraving-preview/blocks/engraving-preview.liquid` + `assets/engraving-preview*.js` | "Personalize" dialog: renders the engraving (WebGL lighting) on the product photo, variant/font pickers, captures a snapshot and adds to cart with `Engraving`, `Engraving Font`, `_Engraved Preview`. |
 | Cart images embed | `extensions/engraving-preview/blocks/cart-engraving-images.liquid` | Optional app embed: shows the engraved preview on the cart page / drawer. |
+| Preview cleanup | `app/routes/app.preview-cleanup.tsx` | Admin page that removes preview images no order uses (30–55 days old only; needs `read_orders`). |
 | Upload endpoint | `app/routes/apps.engraving.upload-preview.tsx` (app proxy `/apps/engraving`) | Stores the snapshot in the shop's Files and returns its CDN URL. Size/type checked, rate limited. |
 | Cart transform | `extensions/engraving-cart-transform` | Swaps the line image at checkout for the engraved preview. Activated automatically on install. |
 | Engraving validation | `extensions/engraving-validation` | Blocks checkout when an engraving breaks the product's Max characters / Uppercase only rules (catches orders that bypass the storefront). Activated automatically on install; status on the Setup page. |
@@ -82,6 +83,5 @@ Before a release, also run the manual checklist in `docs/SMOKE-TEST.md`.
 
 - The validation function's `schema.graphql` has to be fetched once with the
   CLI before its first deploy: see `docs/VALIDATION-FUNCTION.md`.
-- Preview images uploaded but never ordered stay in the shop's Files. Cleaning
-  them up safely needs order access (`read_orders`) so an image used by an
-  order is never deleted.
+- Preview cleanup is manual (admin → Preview cleanup). It could be scheduled
+  later (e.g. a Vercel cron calling it per shop).
