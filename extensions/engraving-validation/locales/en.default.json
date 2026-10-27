@@ -1,0 +1,4 @@
+{
+  "name": "Engraving validation",
+  "description": "Blocks checkout when an engraving is longer than the product allows or isn't in capitals when required."
+}

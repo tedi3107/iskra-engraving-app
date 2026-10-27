@@ -15,6 +15,7 @@ Built on Shopify's React Router app template (see `LICENSE.md`).
 | Cart images embed | `extensions/engraving-preview/blocks/cart-engraving-images.liquid` | Optional app embed: shows the engraved preview on the cart page / drawer. |
 | Upload endpoint | `app/routes/apps.engraving.upload-preview.tsx` (app proxy `/apps/engraving`) | Stores the snapshot in the shop's Files and returns its CDN URL. Size/type checked, rate limited. |
 | Cart transform | `extensions/engraving-cart-transform` | Swaps the line image at checkout for the engraved preview. Activated automatically on install. |
+| Engraving validation | `extensions/engraving-validation` | Blocks checkout when an engraving breaks the product's Max characters / Uppercase only rules (catches orders that bypass the storefront). Activated automatically on install; status on the Setup page. |
 
 Data lives in Shopify, not in an app database:
 
@@ -60,6 +61,7 @@ shopify app dev
 | `npm run test:e2e` | Storefront browser tests (first time: `npx playwright install chromium`) |
 | `npm run typecheck` / `npm run lint` | As in CI |
 | `cd extensions/engraving-cart-transform && npx vitest run tests/cart_transform_run.test.ts` | Cart transform unit tests |
+| `cd extensions/engraving-validation && npx vitest run tests/cart_validations_generate_run.test.ts` | Validation function unit tests |
 
 Before a release, also run the manual checklist in `docs/SMOKE-TEST.md`.
 
@@ -78,8 +80,8 @@ Before a release, also run the manual checklist in `docs/SMOKE-TEST.md`.
 
 ## Open items
 
-- Server-side validation of the engraving text at checkout: see
-  `docs/VALIDATION-FUNCTION.md`.
+- The validation function's `schema.graphql` has to be fetched once with the
+  CLI before its first deploy: see `docs/VALIDATION-FUNCTION.md`.
 - Preview images uploaded but never ordered stay in the shop's Files. Cleaning
   them up safely needs order access (`read_orders`) so an image used by an
   order is never deleted.

@@ -1,0 +1,43 @@
+{
+  "payload": {
+    "export": "cart-validations-generate-run",
+    "target": "cart.validations.generate.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "engraving": {
+              "value": "Marija"
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "zone": {
+                  "jsonValue": {
+                    "maxLength": 12,
+                    "uppercaseOnly": true
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "validationAdd": {
+            "errors": [
+              {
+                "message": "Engraving \"Marija\" must be in capital letters.",
+                "target": "$.cart"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

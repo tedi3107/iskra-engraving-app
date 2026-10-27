@@ -171,10 +171,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ error: fileErrors?.[0]?.message ?? "Could not save the image." }, 500);
   }
 
-  // A MediaImage is usually ready almost instantly, but Shopify processes it
-  // asynchronously. Wait briefly here (most uploads finish inside this
-  // window); anything slower is handed back as "pending" for the storefront
-  // to poll via GET, instead of holding this request open for seconds.
+  // Usually ready almost instantly, but processing is asynchronous: wait
+  // briefly, then hand back "pending" for the storefront to poll instead of
+  // holding the request open.
   let url = createdFile.image?.url ?? null;
   for (let attempt = 0; !url && attempt < 4; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, attempt < 2 ? 300 : 700));

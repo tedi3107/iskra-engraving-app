@@ -3,12 +3,16 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
 import { CART_TRANSFORM_FUNCTION_HANDLE } from "../cart-transform.server";
+import {
+  createEngravingValidation,
+  deleteEngravingValidation,
+  findEngravingValidation,
+  type EngravingValidation,
+} from "../validation.server";
 
-// One-off admin utility: cartTransformCreate has to be called once per shop
-// (not once per app), so every new store installation needs this same
-// activation step. This page runs it through the shop's own authenticated
-// admin session — whichever store this route is opened from — instead of
-// requiring a separate GraphiQL/CLI session tied to a specific dev store.
+// Status and manual control of the per-shop cart transform. New installs get
+// it automatically (app/cart-transform.server.ts); this page runs
+// cartTransformCreate/Delete through the current shop's admin session.
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -30,7 +34,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
   const json = await response.json();
 
+  // Fails until the merchant approves the write_validations permission.
+  let validation: EngravingValidation | null = null;
+  let validationAvailable = true;
+  try {
+    validation = await findEngravingValidation(admin);
+  } catch {
+    validationAvailable = false;
+  }
+
   return {
+    validation,
+    validationAvailable,
     shopDomain: json.data?.shop?.myshopifyDomain as string,
     existing: (json.data?.cartTransforms?.nodes ?? []) as {
       id: string;
@@ -44,6 +59,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = formData.get("intent") ?? "activate";
+
+  if (intent === "validation-activate" || intent === "validation-deactivate") {
+    try {
+      let error: string | null;
+      if (intent === "validation-activate") {
+        error = await createEngravingValidation(admin);
+      } else {
+        const id = formData.get("id");
+        if (typeof id !== "string" || !id) return { error: "Missing validation id.", intent: "validation" as const };
+        error = await deleteEngravingValidation(admin, id);
+      }
+      if (error) return { error, intent: "validation" as const };
+      return { success: true, intent: "validation" as const };
+    } catch {
+      return {
+        error: "The app doesn't have permission yet — approve its updated permissions, then try again.",
+        intent: "validation" as const,
+      };
+    }
+  }
 
   if (intent === "deactivate") {
     const id = formData.get("id");
@@ -108,21 +143,25 @@ export default function SetupCartTransform() {
   const loaderFetcher = useFetcher<typeof loader>();
   const activateFetcher = useFetcher<typeof action>();
   const deactivateFetcher = useFetcher<typeof action>();
+  const validationFetcher = useFetcher<typeof action>();
 
   useEffect(() => {
     loaderFetcher.load("/app/setup-cart-transform");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-check status after either action settles, so the list of existing
-  // transforms (and the activate/deactivate buttons shown) reflect what
-  // actually happened rather than the stale pre-action state.
+  // Reload the status after either action so the list and buttons reflect the
+  // result.
   useEffect(() => {
-    if (activateFetcher.data?.success || deactivateFetcher.data?.success) {
+    if (
+      activateFetcher.data?.success ||
+      deactivateFetcher.data?.success ||
+      validationFetcher.data?.success
+    ) {
       loaderFetcher.load("/app/setup-cart-transform");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activateFetcher.data, deactivateFetcher.data]);
+  }, [activateFetcher.data, deactivateFetcher.data, validationFetcher.data]);
 
   const data = loaderFetcher.data;
   const isChecking = loaderFetcher.state !== "idle";
@@ -130,6 +169,7 @@ export default function SetupCartTransform() {
   const isDeactivating = deactivateFetcher.state !== "idle";
   const existing = data?.existing ?? [];
   const alreadyActive = existing.length > 0;
+  const isValidationBusy = validationFetcher.state !== "idle";
 
   return (
     <s-page heading="Cart Transform setup">
@@ -239,6 +279,84 @@ export default function SetupCartTransform() {
           <p style={{ color: "#0f7b0f" }}>
             Deactivated — {deactivateFetcher.data.deletedId}.
           </p>
+        )}
+      </s-section>
+
+      <s-section heading="Engraving check at checkout">
+        <s-paragraph>
+          Stops checkout when an engraving is longer than the product&apos;s
+          Max characters, or isn&apos;t in capitals when the product requires
+          it. The storefront already prevents this while typing; this catches
+          orders that bypass it.
+        </s-paragraph>
+
+        {data && !data.validationAvailable && (
+          <s-paragraph>
+            <s-text tone="critical">
+              Waiting for permission: approve the app&apos;s updated permissions
+              (Shopify asks when the app is opened), then reload this page.
+            </s-text>
+          </s-paragraph>
+        )}
+
+        {data?.validationAvailable && data.validation && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "0.75rem",
+              border: "1px solid #e1e1e1",
+              borderRadius: 6,
+              padding: "0.6rem 0.75rem",
+            }}
+          >
+            <span style={{ fontSize: "0.9em" }}>
+              {data.validation.enabled ? "Active" : "Installed but disabled in Settings → Checkout"}
+            </span>
+            <button
+              type="button"
+              disabled={isChecking || isValidationBusy}
+              onClick={() =>
+                validationFetcher.submit(
+                  { intent: "validation-deactivate", id: data.validation!.id },
+                  { method: "post" },
+                )
+              }
+              style={{
+                border: "1px solid #b3261e",
+                borderRadius: 4,
+                background: "white",
+                color: "#b3261e",
+                padding: "0.35rem 0.75rem",
+                cursor: isChecking || isValidationBusy ? "default" : "pointer",
+              }}
+            >
+              {isValidationBusy ? "Working…" : "Deactivate"}
+            </button>
+          </div>
+        )}
+
+        {data?.validationAvailable && !data.validation && (
+          <button
+            type="button"
+            disabled={isChecking || isValidationBusy}
+            onClick={() => validationFetcher.submit({ intent: "validation-activate" }, { method: "post" })}
+            style={{
+              border: "none",
+              borderRadius: 6,
+              background: "#202020",
+              color: "white",
+              padding: "0.6rem 1.2rem",
+              cursor: isChecking || isValidationBusy ? "default" : "pointer",
+            }}
+          >
+            {isValidationBusy ? "Activating…" : "Activate engraving check"}
+          </button>
+        )}
+
+        {validationFetcher.data?.error && (
+          <p style={{ color: "#b3261e" }}>{validationFetcher.data.error}</p>
         )}
       </s-section>
 

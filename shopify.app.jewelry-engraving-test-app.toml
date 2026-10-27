@@ -22,7 +22,7 @@ api_version = "2026-07"
   uri = "/webhooks/compliance"
 
 [access_scopes]
-scopes = "write_products,write_files,write_cart_transforms,read_files"
+scopes = "write_products,write_files,write_cart_transforms,read_files,read_orders,write_validations"
 
 [auth]
 redirect_urls = [ "https://iskra-engraving-app.vercel.app/api/auth" ]

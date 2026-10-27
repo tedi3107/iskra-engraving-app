@@ -53,12 +53,9 @@ function measureGlyphWidths(chars: string[], font: string): number[] {
   return chars.map((ch) => ctx.measureText(ch).width);
 }
 
-// This file is the ONLY place that imports react-konva. Konva touches the
-// DOM/canvas directly, so importing it at the top of a route module would
-// make the dev server try to load it during server-side rendering too —
-// that's what "Cannot find module 'canvas'" was. Loading this component only
-// via a dynamic import() inside a useEffect (see app.position-designer.tsx)
-// keeps it out of the server bundle entirely.
+// The only module that imports react-konva. Konva needs a real DOM/canvas, so
+// app.position-designer.tsx loads this component with a dynamic import() and
+// it never runs during server-side rendering.
 export default function EngravingCanvas({
   image,
   shape,
@@ -78,26 +75,15 @@ export default function EngravingCanvas({
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
 
-  // Canvas (which Konva draws onto) doesn't repaint itself when a font
-  // finishes loading the way regular HTML text does — the FontFace the
-  // parent asked the browser to load can become available seconds after
-  // the first draw, and without this the previous fallback font just stays
-  // on screen until something unrelated happens to trigger a redraw (like
-  // switching fonts and back). fontsReadyTick comes from the parent and
-  // bumps once per font that finishes loading; reacting to it here (rather
-  // than a page-wide DOM event) means there's no window where a font could
-  // finish loading before anything is listening — React guarantees this
-  // effect runs after the prop change, whenever that change happens.
+  // Canvas doesn't redraw by itself when a web font finishes loading. The
+  // parent bumps fontsReadyTick once per loaded font, and the layer redraws
+  // then.
   useEffect(() => {
     layerRef.current?.batchDraw();
   }, [fontsReadyTick]);
 
-  // Both the shape node and the Transformer are created right here, in this
-  // one component, so by the time this effect runs after the first commit
-  // both refs are guaranteed to be populated. Re-running when `shape`
-  // changes matters too: switching between straight and curved swaps in a
-  // completely different Konva node (a Rect vs a Circle), so the Transformer
-  // needs to be pointed at the new one.
+  // Point the Transformer at the current shape node; switching
+  // straight/curved swaps a Rect for a Circle.
   useEffect(() => {
     const node = rectRef.current ?? circleRef.current;
     if (node && trRef.current) {
@@ -106,11 +92,8 @@ export default function EngravingCanvas({
     }
   }, [shape]);
 
-  // fontSize is a percentage of the zone's own size — its height for a box,
-  // its radius for a circle — not of the whole image. That keeps it
-  // meaningful regardless of how big the zone is relative to the image (a
-  // small zone on a large product photo needs the same treatment as a large
-  // one), and matches how the storefront computes it.
+  // fontSize is a percentage of the zone (box height or circle radius), not
+  // of the image, the same as on the storefront.
   const fontSizePx =
     shape === "straight"
       ? (fontSize / 100) * geometry.height
