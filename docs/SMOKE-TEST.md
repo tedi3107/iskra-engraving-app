@@ -64,3 +64,11 @@ Automated checks first: `npm test`, `npm run typecheck`, `npm run lint`.
     headers:{'Content-Type':'application/json'}, body: JSON.stringify({items:
     [{id: <variantId>, quantity: 1, properties: {Engraving: 'WAY TOO LONG FOR
     THIS RING'}}]})})`): checkout shows the engraving error and won't proceed.
+
+## Preview cleanup
+24. Admin → Preview cleanup → **Check**: shows counts; previews used by orders
+    are listed as kept. On a fresh store expect 0 deletable (nothing is 30+
+    days old yet).
+25. If anything is deletable: **Delete**, then confirm in Content → Files that
+    only `engraving-preview-*` files without orders disappeared, and that an
+    existing order still shows its engraved image.
