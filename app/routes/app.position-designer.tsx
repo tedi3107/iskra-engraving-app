@@ -24,11 +24,9 @@ import {
 const METAFIELD_NAMESPACE = "engraving";
 const METAFIELD_KEY = "zone";
 
-// The actual fonts are uploaded once, globally, on the app's Font settings
-// page — this page just stores which of the two a product uses. These
-// preview families are stand-ins for the dropdown/canvas until a real font
-// is uploaded for that slot (see the FontFace-loading effect below, which
-// swaps in the real one as soon as it's available).
+// Fonts are uploaded store-wide in Font settings; a product only stores which
+// slot it uses. These families are stand-ins until a slot has a real font,
+// which the FontFace effect below loads.
 export const FONT_CHOICES = [
   { value: "one", label: "Font 1", previewFamily: "'Great Vibes', cursive" },
   { value: "two", label: "Font 2", previewFamily: "'Playfair Display', serif" },
@@ -138,10 +136,8 @@ export default function PositionDesigner() {
     useState<ComponentType<React.ComponentProps<typeof EngravingCanvasComponent>> | null>(null);
 
   useEffect(() => {
-    // react-konva touches the canvas/DOM directly, so it can only run in the
-    // browser. Loading it here, inside an effect, keeps it out of the
-    // server-side render entirely — a top-level import would make the dev
-    // server try (and fail) to load it during SSR too.
+    // react-konva needs the browser; loading it here keeps it out of
+    // server-side rendering.
     import("../components/EngravingCanvas").then((mod) => setEngravingCanvas(() => mod.default));
   }, []);
 
@@ -155,9 +151,8 @@ export default function PositionDesigner() {
   const [fontOneGeom, setFontOneGeom] = useState<FontGeometry>(EMPTY_GEOMETRY);
   const [fontTwoGeom, setFontTwoGeom] = useState<FontGeometry>(EMPTY_GEOMETRY);
 
-  // What the canvas currently shows/edits: Font 1's geometry, or Font 2's —
-  // when linked the two are always equal anyway, so this is just "the one
-  // matching the Font dropdown" either way.
+  // The geometry shown and edited on the canvas: the selected font's (both
+  // are identical while linked).
   const currentGeom = fontChoice === "one" ? fontOneGeom : fontTwoGeom;
 
   // Local to the editor only — never saved. Lets the merchant type sample
@@ -192,29 +187,17 @@ export default function PositionDesigner() {
     img.src = imageUrl;
   };
 
-  // True once we've heard back about this exact product's saved zone (with
-  // either a real value or null for "nothing saved yet") — not just "some
-  // fetch resolved", which could still be the answer for whichever product
-  // was selected before this one.
+  // True once the saved zone for this exact product has loaded, not a late
+  // response for the previously picked product.
   const zoneReady = zoneFetcher.data?.productId === product?.id;
 
-  // Bumped once per font that finishes loading — passed down to
-  // EngravingCanvas so it can force a Konva redraw exactly when needed. A
-  // DOM-level "fonts finished loading" event has a race: if a font happens
-  // to finish before the canvas has mounted and started listening, that
-  // one-time event is simply missed, and nothing redraws until something
-  // unrelated happens to trigger it. Routing this through React state
-  // instead ties it to the component's own render/effect order, so there's
-  // no window where the signal can arrive before anything is listening.
+  // Bumped once per font that finishes loading; EngravingCanvas redraws when
+  // it changes. React state rather than a DOM event, so a font that loads
+  // before the canvas mounts isn't missed.
   const [fontsReadyTick, setFontsReadyTick] = useState(0);
 
-  // The Konva canvas preview used to always show a made-up stand-in font
-  // (Great Vibes / Playfair Display), since it had no way to render the
-  // merchant's actual uploaded font. Now that a real font file and URL are
-  // available (once shopFonts loads), loading it into the browser via the
-  // Font Loading API lets Konva use the real thing, so the admin preview
-  // actually matches what shows up on the storefront instead of an
-  // arbitrary substitute.
+  // Load the store's uploaded fonts with the Font Loading API so the canvas
+  // previews the same fonts the storefront uses.
   useEffect(() => {
     const shopFonts = zoneFetcher.data?.shopFonts;
     if (!shopFonts) return;
@@ -233,18 +216,13 @@ export default function PositionDesigner() {
     });
   }, [zoneFetcher.data?.shopFonts]);
 
-  // Decide the starting shape/geometry/font exactly once per product, before
-  // the canvas ever mounts — as soon as both the image and the saved-zone
-  // lookup are ready. See EngravingCanvas for why the Transformer attaches
-  // cleanly this way but wouldn't if these changed after the first mount.
+  // Initialise shape, geometry and font once per product, as soon as both the
+  // image and the saved zone are ready and before the canvas mounts.
   useEffect(() => {
     if (!image || !zoneReady) return;
     let source = zoneFetcher.data?.zone ?? DEFAULT_ZONE;
-    // A saved zone from an earlier, buggier version of this tool could have
-    // degenerate geometry (e.g. a circle with radius 0) baked into it —
-    // trusting that blindly would load a box/circle with nothing visible to
-    // grab. Treating it as if nothing had been saved falls back to sane
-    // defaults instead of reproducing the old bug forever.
+    // A saved zone with degenerate geometry (e.g. radius 0) has nothing to
+    // grab, so start from the defaults instead.
     if (isDegenerate(source.shape, source.fontOne) || isDegenerate(source.shape, source.fontTwo)) {
       source = DEFAULT_ZONE;
     }
@@ -368,14 +346,9 @@ export default function PositionDesigner() {
   const displayHeight = image ? image.height * scale : 0;
   const isSaving = fetcher.state !== "idle";
   const currentZoneGeom = zone ? (fontChoice === "one" ? zone.fontOne : zone.fontTwo) : null;
-  // The input's own maxLength attribute only stops new typing from going
-  // past the limit — it doesn't retroactively trim a value that arrived any
-  // other way, like the "Your Text" default (9 characters) landing in a
-  // field whose max is, say, 1 for a monogram-style product, or the
-  // merchant dragging the Max characters slider down below what's already
-  // typed. Deriving the displayed value fresh each render (rather than
-  // storing a separately-clamped copy) keeps it correct in both cases
-  // automatically.
+  // maxLength only blocks further typing; it doesn't trim an existing value
+  // (the default sample text, or the merchant lowering Max characters). So
+  // the displayed value is derived, not stored.
   const displayPreviewText = previewText.slice(0, maxLength);
 
   return (

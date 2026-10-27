@@ -12,21 +12,13 @@
 
     var input = host.querySelector(".engraving-preview__input");
 
-    // Local storage persistence: remembers everything about this
-    // customer's in-progress engraving for THIS product (keyed by
-    // product id, so every product's own draft is kept separate) across
-    // a refresh or coming back later, until they actually complete an
-    // order with it. The draft is a single JSON object rather than just
-    // the typed text — today that's { text, fontChoice }, and whatever
-    // else this app grows to let a customer choose later (a color, a
-    // symbol, anything) just becomes another key saved through the same
-    // saveEngravingDraft(patch) below, merged in alongside what's
-    // already there, with no changes needed to the load/merge/version
-    // machinery itself.
+    // Draft persistence: the customer's in-progress engraving for this
+    // product (keyed by product id) is kept in localStorage until it's added
+    // to cart. The draft is one JSON object, so a new kind of choice is just
+    // another key passed to saveEngravingDraft(patch).
     //
-    // Drafts are wiped whenever this theme-app-extension JS asset is
-    // republished. Shopify puts a new version fingerprint on asset_url
-    // at deploy time, so we don't have to bump a number by hand.
+    // Drafts are cleared whenever this asset is republished: asset_url
+    // carries a new fingerprint on every deploy.
     var ENGRAVING_STORAGE_PREFIX = "iskra-engraving:";
     var ENGRAVING_STORAGE_VERSION =
       host.getAttribute("data-storage-version") || "";
@@ -47,8 +39,8 @@
         });
         localStorage.setItem(versionKey, ENGRAVING_STORAGE_VERSION);
       } catch (e) {
-        // Storage unavailable (private browsing, disabled, quota) —
-        // persistence just won't work for this visitor; nothing to fix.
+        // Storage unavailable (private mode, disabled, quota): no persistence
+        // for this visitor.
       }
     })();
 
@@ -67,11 +59,8 @@
       }
     }
 
-    // Merges patch into whatever draft is already stored (so saving the
-    // text just now doesn't clobber a font choice saved a moment ago,
-    // or vice versa) and writes the result back in one go. A draft with
-    // no actual text isn't worth keeping — there's nothing meaningful to
-    // restore — so that case clears the key instead of writing one.
+    // Merges patch into the stored draft. A draft without text is removed
+    // rather than saved.
     function saveEngravingDraft(patch) {
       try {
         var merged = Object.assign({}, loadEngravingDraft(), patch);
@@ -156,21 +145,11 @@
       if (!text) return;
       var fontSizePercent = geomAttr("font-size");
 
-      // Zone coordinates are percentages of the FULL source photo. That
-      // maps directly onto this canvas when nothing has transformed the
-      // image (crop is undefined) — but a themed display box often uses
-      // a different aspect ratio than the source, needing CSS to make it
-      // fit. object-fit: cover scales both axes by the same factor and
-      // crops whatever overflows; object-fit: fill (seen on this theme's
-      // own zoom view) instead stretches each axis independently to
-      // match the box exactly, cropping nothing. crop (built in
-      // renderToTarget from the target's own computed object-fit) always
-      // carries a scaleX/scaleY pair — equal for cover, independent for
-      // fill — plus how much of each axis a cover-style crop removed (0
-      // for fill, since it never crops). Applying the wrong one of these
-      // two models is exactly what put the zoomed engraving in the wrong
-      // spot: cover's crop-offset math doesn't apply to a fill image, so
-      // subtracting an offset that shouldn't exist there shifted it.
+      // Zone coordinates are percentages of the full source photo. Without
+      // crop they map straight onto this canvas; with crop (derived from the
+      // target <img>'s object-fit and object-position, see
+      // cropFromRenderedImage) they go through its per-axis scale and the
+      // offset that a cover/contain fit introduces.
       function pxX(percent) {
         return crop
           ? (percent / 100) * crop.naturalW * crop.scaleX - crop.offsetX
@@ -280,13 +259,8 @@
       }
     }
 
-    // Filename only — Shopify serves the same photo from cdn.shopify.com
-    // and the shop's /cdn/shop/ host, at different widths, sometimes with
-    // an _800x / _1946x suffix baked into the file name. Comparing full
-    // paths (or even path-without-query) misses all of those and is why
-    // the overlay used to stick to the first gallery slide after a
-    // variant switch: the JSON url and the theme's <img> src look
-    // unrelated even though they are the same photo.
+    // The same photo regardless of CDN host, rendered width or size suffix
+    // (see core.imageIdentity).
     function imageIdentity(src) {
       return core.imageIdentity(src);
     }
@@ -410,13 +384,9 @@
       ? imageIdentity(firstExternalImage.src)
       : null;
 
-    // Every <img> currently known to show this same product photo, each
-    // paired with its own overlay canvas — not just the one visible when
-    // the page loads. Zoom/lightbox views typically clone the photo into
-    // a new, larger <img> inserted well after this script's initial run,
-    // so a single fixed reference wouldn't reach it; each is tracked and
-    // rendered to independently, since a zoomed copy is usually a
-    // completely separate element from the small one on the page itself.
+    // Every <img> currently showing this product photo, each with its own
+    // overlay canvas. Zoom and lightbox views insert their own copies later,
+    // so every copy is tracked and rendered independently.
     var externalTargets = [];
 
     function detachOverlay(target) {
@@ -437,11 +407,8 @@
       canvas.className = "engraving-preview__canvas";
       canvas.style.position = "absolute";
       canvas.style.pointerEvents = "none";
-      // A zoom view often positions its own <img> inside a container
-      // that isn't itself position:relative — an absolutely-positioned
-      // canvas would then place itself against some further ancestor
-      // instead of directly over this image, so this guarantees the
-      // immediate parent is a valid containing block first.
+      // The overlay is position:absolute, so the image's parent has to be its
+      // containing block.
       var parent = img.parentNode;
       var parentPosition = parent && window.getComputedStyle(parent).position;
       if (parent && (parentPosition === "static" || !parentPosition)) {
@@ -451,16 +418,9 @@
       var target = { img: img, canvas: canvas, resizeObserver: null };
       externalTargets.push(target);
 
-      // Some zoom/lightbox views animate open (expanding from nothing to
-      // full size) rather than appearing at final size immediately — the
-      // <img> can already be "complete" (pixels loaded, naturalWidth
-      // known) well before that animation settles, so the very first
-      // render can measure a getBoundingClientRect() of 0x0 and draw
-      // nothing visible. Watching the image's own rendered size, rather
-      // than rendering once and hoping it's already final, re-runs the
-      // same render whenever that size actually changes — covering the
-      // end of an open animation, an orientation change, or anything
-      // else that resizes it later, without needing to guess a delay.
+      // Zoom views can animate open, so the first measurement may be 0x0.
+      // Re-render whenever the image's rendered size changes instead of
+      // guessing a delay.
       if (window.ResizeObserver) {
         target.resizeObserver = new ResizeObserver(function () {
           renderToTarget(target);
@@ -503,12 +463,11 @@
 
     refreshExternalTargets();
 
-    // Dawn prepends the newly selected variant slide and toggles
-    // is-active rather than inserting a brand-new <img>. childList alone
-    // misses that; watching class/src on the product section and the
-    // product modal catches it. Body childList still covers lightboxes
-    // that portal outside the section. Our own canvas inserts are ignored
-    // so attaching an overlay cannot recurse back into this observer.
+    // Dawn switches variants by prepending a slide and toggling is-active
+    // rather than inserting a new <img>, so class/src changes are watched as
+    // well as added nodes. The body observer covers lightboxes rendered
+    // outside the section. Our own canvases are ignored so attaching an
+    // overlay can't retrigger this observer.
     if (window.MutationObserver) {
       var refreshScheduled = false;
       var scheduleOverlayRefresh = function () {
@@ -635,40 +594,19 @@
     }
 
     function renderToTarget(target) {
-      // Matches the canvas to the <img>'s own box exactly, rather than
-      // stretching it across 100% of the parent — the two are only the
-      // same when the parent has no padding. This zoom view's own
-      // container does have padding around the image, so a 100%-sized
-      // canvas previously covered that padding too, ending up both
-      // larger than and offset from the actual photo.
-      //
-      // getBoundingClientRect (rather than offsetTop/Left/Width/Height)
-      // is what keeps this precise: this theme's own layout uses
-      // fractional-pixel sizing (padding like "31.328px" was seen on
-      // this zoom view), and offsetTop and friends round to whole
-      // pixels, which was enough rounding error — after multiplying
-      // through the crop scale below — to leave the overlay just
-      // slightly off. Both rects are read from the same viewport
-      // coordinate space at the same moment, so subtracting one from the
-      // other gives the image's exact position relative to its parent
-      // regardless of that rounding, and reusing imgRect's own
-      // width/height for the crop math too (rather than a separate
-      // clientWidth/clientHeight read) means the size used to position
-      // the canvas and the size used to compute the crop can never
-      // quietly disagree with each other.
+      // Sizes and positions the canvas to the <img>'s own box, not its
+      // parent's (which may have padding). getBoundingClientRect keeps
+      // fractional pixels, which matter once scaled by the crop, and the same
+      // rect feeds the crop math so positioning and crop always agree.
       if (!target.canvas || !target.canvas.parentElement) return;
       var imgRect = target.img.getBoundingClientRect();
       var canvasParent = target.canvas.parentElement;
       var parentRect = canvasParent.getBoundingClientRect();
       var dW = imgRect.width;
       var dH = imgRect.height;
-      // The canvas is position:absolute, so top/left are measured inside
-      // the parent's scrollable content, not from what is currently
-      // visible. When the parent is a scroll container (the zoom modal),
-      // the viewport-space difference above is off by exactly
-      // scrollTop/scrollLeft (plus the parent's border), so they are
-      // added back here. For parents that don't scroll, both are 0 and
-      // nothing changes.
+      // top/left are relative to the parent's scrolled content: add the
+      // parent's scroll offset and subtract its border (both 0 for ordinary
+      // parents).
       target.canvas.style.top =
         imgRect.top -
         parentRect.top -
@@ -692,10 +630,8 @@
       externalTargets.forEach(renderToTarget);
     }
 
-    // Many things ask for a full re-render in the same tick (a keystroke,
-    // a font load, a variant swap, a ResizeObserver callback). Coalescing
-    // them to one per animation frame keeps typing smooth and avoids
-    // redoing the WebGL pass several times for an identical result.
+    // Coalesces re-render requests (keystrokes, font loads, variant swaps,
+    // resizes) into one per animation frame.
     var renderAllQueued = false;
     function renderAllPreviews() {
       if (renderAllQueued) return;
@@ -746,10 +682,8 @@
     if (fontPicker) {
       var radios = fontPicker.querySelectorAll('input[type="radio"]');
       radios.forEach(function (radio) {
-        // Keeps the visible pill selection in sync with currentFontChoice
-        // whichever way it was decided (the zone's own default, or a
-        // choice restored from a saved draft) — the Liquid-rendered
-        // checked attribute only ever matches the former.
+        // Sync the pills with currentFontChoice, which may come from a saved
+        // draft rather than the Liquid-rendered default.
         radio.checked = radio.value === currentFontChoice;
         radio.addEventListener("change", function () {
           if (radio.checked) applyFontChoice(radio.value);
@@ -869,15 +803,9 @@
     host._onResize = renderAllPreviews;
     window.addEventListener("resize", host._onResize);
 
-    // Runs before the other input listeners below (canvas redraw, mirroring
-    // to the cart form) so they all see the already-uppercased value — the
-    // CSS text-transform on the input only changes how letters are drawn on
-    // screen, not the actual characters, so without this the submitted
-    // property and the canvas render would still get whatever case the
-    // customer actually typed. Restoring the caret position afterward stops
-    // the cursor jumping to the end on every keystroke, which re-setting
-    // .value would otherwise cause if the customer edits mid-string rather
-    // than only ever typing at the end.
+    // Uppercases the actual value (CSS text-transform only changes how it
+    // looks) before the other input listeners run, keeping the caret where it
+    // was.
     if (uppercaseOnly) {
       input.addEventListener("input", function () {
         var caret = input.selectionStart;
@@ -910,17 +838,11 @@
     input.addEventListener("input", saveEngravingToStorage);
     updateCharCounter();
 
-    // Variant color swatches (yellow/rose/white gold, say) each have their
-    // own product photo, and the popup should follow whichever one the
-    // customer currently has selected — the engraving's own position stays
-    // the same (it's expressed as percentages of the image, and same-piece
-    // variant photos share the same crop/composition), only the underlying
-    // photo changes. Themes signal a variant change in different ways (a
-    // custom event, a plain <select>, radio swatches, or just setting a
-    // hidden field's value directly via JS with no event at all) — rather
-    // than betting on one specific mechanism, this covers the common event
-    // names AND polls the variant id field's value as a guaranteed fallback
-    // that works regardless of how this theme happens to do it.
+    // The preview follows the selected variant's photo; the zone stays put
+    // because it's expressed as percentages of the image. Themes announce
+    // variant changes differently (events, selects, radios, or silently
+    // setting the id field), so the common events are handled and the id
+    // field is polled as a fallback.
     var variantImagesScript = host.querySelector(
       ".engraving-preview__variant-images",
     );
@@ -945,10 +867,9 @@
       }
     }
 
-    // Variant picking lives on this component. Dawn hides behind
-    // variant-radios (not variant-selects) with name="Color", and after
-    // the first change it may replace those nodes — driving a cached
-    // theme control is why only the first pill click used to work.
+    // Variant picking lives on this component. The theme's own picker is
+    // hidden and looked up again on every use, because Dawn may replace its
+    // nodes after a change.
     var variantPicker = host.querySelector(
       ".engraving-preview__variant-picker",
     );
@@ -1214,9 +1135,9 @@
           ? sid + "-" + variant.featured_media_id
           : "";
 
-      // Dawn hides variant photos with hide_variants until the slide is
-      // prepended as :first-child. Do that ourselves so sold-out variants
-      // still show their own image — Dawn's picker will not select them.
+      // Dawn hides variant photos until their slide is first in the list. Do
+      // the same here so sold-out variants, which Dawn's picker won't select,
+      // still show their photo.
       if (mediaId) {
         document.querySelectorAll("media-gallery").forEach(function (gallery) {
           try {
@@ -1261,9 +1182,9 @@
 
       swapToVariantImage(variant.id);
 
-      // Dawn's picker treats unavailable options as unselectable and will
-      // snap media/id back to an in-stock combo if we dispatch change into
-      // it. Image swap must not depend on stock — only cart does.
+      // Dawn's picker snaps unavailable combinations back to an in-stock one,
+      // so it's only notified for available variants. The image swap above
+      // doesn't depend on stock.
       if (variant.available !== false) {
         if (field) field.dispatchEvent(new Event("change", { bubbles: true }));
         syncThemePickerToVariant(variant);
@@ -1453,12 +1374,9 @@
           swapToVariantImage(variant.id);
         });
       }
-      // Fallback for themes that change the variant id silently (no event at
-      // all): poll the id field — fast (400ms) for a few seconds after the
-      // customer interacts with the page, slow (2s) when idle, and not at
-      // all while the tab is hidden. Every real variant change follows an
-      // interaction, so detection stays as quick as before without waking
-      // the page 2.5 times a second forever.
+      // Fallback for themes that change the id field without any event: poll
+      // it every 400ms for 5s after an interaction, every 2s otherwise, and
+      // not at all while the tab is hidden.
       var lastInteraction = Date.now();
       host._markInteraction = function () {
         lastInteraction = Date.now();
@@ -1502,34 +1420,23 @@
           : baseQuickAddLabel;
     }
 
-    // True for the whole upload + add-to-cart sequence, triggered from
-    // either the popup's own confirm button or the quick-add button on
-    // the main page — every other way of leaving the dialog (the ×
-    // button, clicking the backdrop, pressing Escape) is blocked while
-    // this is true, so a stray click can't abandon an upload that's
-    // already in progress, and a second click on either add button
-    // can't fire a second, overlapping upload/add-to-cart.
+    // True during upload + add-to-cart, from either button. Blocks closing
+    // the dialog and starting a second, overlapping add.
     var isProcessing = false;
 
-    // The captured preview is a snapshot of one specific combination of
-    // text + font + variant photo. Once any of those change, a snapshot
-    // (or an in-flight upload for it) taken earlier no longer describes
-    // what the customer will actually order, so it is dropped here — the
-    // next add-to-cart (or closing the dialog) takes a fresh one instead
-    // of reusing a stale promise. Left alone while an upload/add is
-    // already running, since that one belongs to the click in progress.
+    // A captured preview matches one text + font + photo combination. When
+    // any of them changes it's dropped, so the next add (or closing the
+    // dialog) captures a fresh one. An upload already in progress belongs to
+    // that click and is left alone.
     function invalidatePendingUpload() {
       if (isProcessing) return;
       pendingUpload = null;
       clearFromCartForms("properties[_Engraved Preview]");
     }
 
-    // Once there's something typed, the trigger reads "Edit" (reopening
-    // the same dialog to change it) rather than "Personalize", picking
-    // up the existing --filled styling a merchant may already have
-    // configured — and a quick-add button appears right under it so
-    // adding the already-personalized item to cart doesn't require
-    // reopening the popup at all.
+    // With text entered the trigger reads "Edit" and gets the --filled style,
+    // and the quick-add button appears so the item can be added without
+    // reopening the dialog.
     function updateTriggerLabel() {
       if (!trigger || !triggerLabel) return;
       var hasValue = !!input.value;
@@ -1556,9 +1463,8 @@
         if (isProcessing) return;
         if (e.target === dialogEl) dialogEl.close();
       });
-      // <dialog> closes on Escape natively before any 'close' handler
-      // runs — 'cancel' fires first and is cancelable, so this is the
-      // hook that actually stops it mid-upload.
+      // Escape closes a <dialog> natively; 'cancel' fires first and is
+      // cancelable, so it's blocked here while processing.
       dialogEl.addEventListener("cancel", function (e) {
         if (isProcessing) e.preventDefault();
       });
@@ -1570,15 +1476,9 @@
       });
     }
 
-    // Shared by the dialog's own confirm button and the quick-add button
-    // on the main page — both upload the current snapshot and add the
-    // same way, differing only in which UI elements they toggle while
-    // the request is in flight. isProcessing is owned entirely here:
-    // callbacks.onStart only fires once a call has actually been
-    // accepted, so a second, overlapping click (from either button)
-    // simply does nothing rather than re-disabling an already-disabled
-    // control and leaking a callback that would never get its matching
-    // onFinish.
+    // Shared by the dialog's confirm button and quick-add, which differ only
+    // in the UI they toggle. Returns false and runs no callbacks when an add
+    // is already in progress.
     function addEngravedItemToCart(callbacks) {
       if (isProcessing || !input.value || !currentVariantIsAvailable())
         return false;
@@ -1593,11 +1493,8 @@
       pendingUpload = uploadEngravingImage();
       pendingUpload
         .then(function (previewUrl) {
-          // Adds directly through Shopify's own cart AJAX endpoint —
-          // deliberately not dependent on locating or clicking any
-          // button the theme provides, since this needs to keep
-          // working even on a product page that has no separate add-
-          // to-cart control of its own at all.
+          // Adds through the cart AJAX API, so this works even when the
+          // product page has no add-to-cart button of its own.
           var properties = { Engraving: input.value };
           if (currentFontFamily)
             properties["Engraving Font"] = currentFontFamily;
@@ -1631,15 +1528,9 @@
           openSideCartBestEffort(data);
           pendingUpload = null;
           finishProcessing();
-          // The draft has served its purpose once the order actually
-          // goes through — clearing the input itself (not just the
-          // saved draft) so the trigger reverts to "Personalize" and
-          // the quick-add button disappears again, rather than sitting
-          // there inviting the exact same engraved item to be added a
-          // second time by accident. The 'input' event cascades this
-          // through every other listener (counter, confirm-button
-          // state, storage) the same way the customer's own typing
-          // already does, rather than repeating that reset by hand here.
+          // Clear the input so the trigger reverts to "Personalize" and
+          // quick-add hides. Dispatching 'input' resets the counter, buttons
+          // and saved draft through their existing listeners.
           input.value = "";
           input.dispatchEvent(new Event("input", { bubbles: true }));
           if (dialogEl.open) dialogEl.close();
@@ -1703,23 +1594,10 @@
     });
     mirrorToCartForms("properties[Engraving]", input.value);
 
-    // Best-effort only: there's no single standard for "open the side
-    // cart", so this tries the specific pattern this theme's own
-    // cart-drawer.liquid uses (a <cart-drawer> element with an open()
-    // method mirroring the close() its own close button calls), then
-    // falls back to a handful of event names many themes listen for to
-    // refresh or reveal their cart UI. Dispatching ones nobody listens
-    // for costs nothing, so this stays harmless if none of it matches.
-    // Best-effort: there's no single standard for "open the side cart",
-    // so this tries progressively more generic approaches. Most specific
-    // first — this theme's own <cart-drawer> exposes renderContents(),
-    // which both swaps in the fresh cart-drawer/cart-icon-bubble HTML
-    // (from the sections data requested in the /cart/add.js call above)
-    // and opens itself afterward, so calling it alone does both jobs.
-    // Only when that's not available does this fall back to a plain
-    // open() (correct content, just not refreshed) or a handful of event
-    // names other themes commonly listen for — dispatching ones nobody
-    // listens for costs nothing, so this stays harmless either way.
+    // Best-effort side-cart refresh: the theme's
+    // <cart-drawer>.renderContents() (swaps in the sections requested in
+    // /cart/add.js and opens the drawer), else its open(), else common cart
+    // events (harmless if nothing listens).
     function openSideCartBestEffort(cartAddData) {
       var cartDrawer = document.querySelector("cart-drawer");
       if (
@@ -1728,18 +1606,10 @@
         cartAddData &&
         cartAddData.sections
       ) {
-        // The theme's own renderContents() tries to clear "is-empty" but
-        // checks .drawer__inner for it — the class actually lives on the
-        // <cart-drawer> element itself (per its own cart-drawer.liquid),
-        // so that check silently never matches and the class is left
-        // behind after the very first add from an empty cart. Nothing
-        // about the swapped-in HTML is wrong, but this stale class stays
-        // on an element renderContents doesn't touch (it only replaces
-        // #CartDrawer's innerHTML), and empty-state CSS keyed off it can
-        // keep the drawer looking empty even though the item is really
-        // there. Clearing it ourselves — safe once an add has actually
-        // succeeded — works around that rather than depending on a fix
-        // to the theme's own code.
+        // Dawn's renderContents() looks for "is-empty" on .drawer__inner, but
+        // the class sits on <cart-drawer> itself, so after the first add from
+        // an empty cart the drawer can still look empty. Removed here once
+        // the add has succeeded.
         cartDrawer.classList.remove("is-empty");
         cartDrawer.renderContents(cartAddData);
         return;
@@ -1763,13 +1633,9 @@
       return core.hexToRgb01(hex);
     }
 
-    // One WebGL context for this block's whole lifetime, created on first
-    // use and reused for every render. Previously each render (every
-    // keystroke, resize, ResizeObserver tick) created a brand-new context
-    // and never released it; browsers cap live contexts at roughly 16 and
-    // start dropping the oldest, which showed up as lost/blank previews.
-    // The returned canvas is shared too, so callers must copy it out
-    // (drawImage) straight away — which every caller already does.
+    // One WebGL context per block, created on first use and reused (browsers
+    // cap live contexts at roughly 16). The returned canvas is shared, so
+    // callers must draw it right away.
     var lighting = null;
 
     var LIGHTING_VS =
@@ -1847,9 +1713,8 @@
         uBase: gl.getUniformLocation(prog, "uBase"),
         uHi: gl.getUniformLocation(prog, "uHi"),
       };
-      // If the browser reclaims the context, drop the cache so the next
-      // render builds a fresh one (the caller falls back to flat colour
-      // for that single frame).
+      // If the browser reclaims the context, rebuild it on the next render;
+      // that one frame falls back to a flat colour.
       out.addEventListener(
         "webglcontextlost",
         function (e) {
@@ -1882,8 +1747,7 @@
 
       var out = lighting.out;
       var gl = lighting.gl;
-      // Assigning width/height also clears the drawing buffer, which is
-      // exactly what a fresh canvas used to give us.
+      // Resizing also clears the drawing buffer.
       out.width = w;
       out.height = h;
 
@@ -1966,10 +1830,9 @@
       });
     }
 
-    // Same overall budget as before (8s from the click): capture, upload
-    // and — if Shopify is still processing the image when the upload
-    // returns — polling its status. Past the deadline the item is added
-    // without a preview rather than keeping the customer waiting.
+    // Capture, upload and (if Shopify is still processing the image) status
+    // polling share an 8s budget; after that the item is added without a
+    // preview.
     var UPLOAD_DEADLINE_MS = 8000;
     var UPLOAD_ENDPOINT = "/apps/engraving/upload-preview";
 
@@ -2040,12 +1903,9 @@
 
     var pendingUpload = null;
 
-    // Only a fallback now: if the customer closes via the × button or the
-    // backdrop without ever using the popup's own "Add to Cart" (say,
-    // planning to use the page's regular button instead), this is what
-    // still gets the engraving image attached. When "Add to Cart" itself
-    // was used, pendingUpload is already set by that point, so this is a
-    // no-op rather than a second, redundant capture+upload.
+    // For customers who close the dialog without using its Add button (e.g.
+    // to use the theme's own button): start the upload now. No-op if one is
+    // already pending.
     dialogEl.addEventListener("close", function () {
       if (!input.value || pendingUpload) return;
       pendingUpload = uploadEngravingImage();

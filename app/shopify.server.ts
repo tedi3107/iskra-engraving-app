@@ -7,14 +7,13 @@ import {
 import { MongoDBSessionStorage } from "@shopify/shopify-app-session-storage-mongodb";
 import { MONGO_DB_NAME } from "./mongo.server";
 import { ensureCartTransform } from "./cart-transform.server";
+import { ensureEngravingValidation } from "./validation.server";
 
-// MONGODB_URI holds the full connection string, including the real
-// username/password (e.g. mongodb+srv://user:pass@iskra.xxxxx.mongodb.net/).
-// It's set as an environment variable in the hosting provider's dashboard
-// (Vercel -> Project -> Settings -> Environment Variables) - never committed
-// to the repo or hardcoded here.
-// Fail fast on missing configuration instead of starting an app that can
-// only fail later with a confusing OAuth/HMAC error.
+// MONGODB_URI (including credentials) comes from the environment, e.g. Vercel
+// → Settings → Environment Variables. Never commit it.
+//
+// Fail fast on missing configuration instead of failing later with a
+// confusing OAuth/HMAC error.
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -43,11 +42,16 @@ const shopify = shopifyApp({
   hooks: {
     afterAuth: async ({ admin }) => {
       // Never let this block the merchant from getting into the app — the
-      // Setup cart transform page can still activate it manually.
+      // Setup page can still activate both manually.
       try {
         await ensureCartTransform(admin);
       } catch (error) {
         console.error("Automatic cart transform activation failed", error);
+      }
+      try {
+        await ensureEngravingValidation(admin);
+      } catch (error) {
+        console.error("Automatic engraving validation activation failed", error);
       }
     },
   },

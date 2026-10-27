@@ -40,6 +40,9 @@ jobs:
       - name: Cart transform unit tests
         run: npx vitest run --root extensions/engraving-cart-transform tests/cart_transform_run.test.ts
 
+      - name: Engraving validation unit tests
+        run: npx vitest run --root extensions/engraving-validation tests/cart_validations_generate_run.test.ts
+
       - name: Install Chromium for browser tests
         run: npx playwright install --with-deps chromium
 

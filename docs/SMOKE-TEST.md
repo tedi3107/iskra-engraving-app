@@ -54,3 +54,13 @@ Automated checks first: `npm test`, `npm run typecheck`, `npm run lint`.
 20. Block settings **Color/material option name** / **Size option name**:
     renaming them to match a product's options renders swatches/size labels for
     those options (defaults `Material` / `Size` match the original behavior).
+
+## Checkout validation
+21. Setup page shows **Engraving check at checkout** as active (after approving
+    the updated permissions).
+22. Add an engraved item normally: checkout proceeds.
+23. Add an item with an over-long or lowercase engraving through
+    `/cart/add.js` (browser console: `fetch('/cart/add.js', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({items:
+    [{id: <variantId>, quantity: 1, properties: {Engraving: 'WAY TOO LONG FOR
+    THIS RING'}}]})})`): checkout shows the engraving error and won't proceed.

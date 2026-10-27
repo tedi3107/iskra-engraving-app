@@ -1,0 +1,43 @@
+{
+  "payload": {
+    "export": "cart-validations-generate-run",
+    "target": "cart.validations.generate.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "engraving": {
+              "value": "THIS IS FAR TOO LONG"
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "zone": {
+                  "jsonValue": {
+                    "maxLength": 12,
+                    "uppercaseOnly": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "validationAdd": {
+            "errors": [
+              {
+                "message": "Engraving \"THIS IS FAR TOO LONG\" is too long — the maximum is 12 characters.",
+                "target": "$.cart"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

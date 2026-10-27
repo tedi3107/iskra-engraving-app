@@ -1,0 +1,42 @@
+{
+  "payload": {
+    "export": "cart-validations-generate-run",
+    "target": "cart.validations.generate.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "engraving": {
+              "value": "MARIJA"
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "zone": {
+                  "jsonValue": {
+                    "maxLength": 12,
+                    "uppercaseOnly": true
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "engraving": null,
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "zone": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}

@@ -118,8 +118,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 type AdminClient = Awaited<ReturnType<typeof authenticate.admin>>["admin"];
 
 // Read-modify-write of the shop's fonts metafield. Returns an error message
-// for the UI, or null on success (GraphQL errors and userErrors included —
-// previously a failed write still reported success).
+// for the UI (GraphQL errors and userErrors), or null on success.
 async function updateShopFonts(
   admin: AdminClient,
   mutate: (fonts: StoredFonts) => StoredFonts,
@@ -181,11 +180,9 @@ function removeFontFromSlot(admin: AdminClient, slot: "one" | "two") {
   });
 }
 
-// Uploading a font file to Shopify (rather than linking to one hosted
-// elsewhere) is a three-step dance: ask for somewhere to put it
-// (stagedUploadsCreate), put it there, then tell Shopify to adopt it as a
-// permanent file (fileCreate). Only after that do we know its final CDN URL,
-// which is what actually gets saved.
+// Uploading a font takes three steps: stagedUploadsCreate, upload to the
+// staged target, fileCreate. The final CDN URL, which is what gets saved, is
+// only known after that.
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
@@ -331,10 +328,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return { error: fileErrors?.[0]?.message ?? "Could not save font file." };
   }
 
-  // A GenericFile is usually ready near-instantly, but Shopify processes it
-  // asynchronously, so the URL isn't always in the fileCreate response yet.
-  // Polling node() a few times (rather than asking the merchant to hit save
-  // again) covers that ordinary delay without making it their problem.
+  // Shopify processes files asynchronously, so the URL may not be in the
+  // fileCreate response yet; poll briefly.
   for (let attempt = 0; !createdFile.url && attempt < 6; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const pollResponse = await admin.graphql(
@@ -383,9 +378,8 @@ function FontSlot({
 }) {
   const fetcher = useFetcher<typeof action>();
   const [familyName, setFamilyName] = useState("");
-  // Fallback is no longer merchant-facing, but the storefront's font-family
-  // CSS still expects one on every stored font, so it's fixed here rather
-  // than removed from the data shape.
+  // Not merchant-facing, but the storefront's font-family CSS expects a
+  // fallback on every stored font.
   const fallback = "sans-serif" as const;
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);

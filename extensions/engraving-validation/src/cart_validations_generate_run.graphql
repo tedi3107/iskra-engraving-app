@@ -1,0 +1,20 @@
+query CartValidationsGenerateRunInput {
+  cart {
+    lines {
+      id
+      engraving: attribute(key: "Engraving") {
+        value
+      }
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          product {
+            zone: metafield(namespace: "engraving", key: "zone") {
+              jsonValue
+            }
+          }
+        }
+      }
+    }
+  }
+}

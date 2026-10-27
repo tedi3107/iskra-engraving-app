@@ -3,6 +3,7 @@ import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { safeJsonParse } from "../lib/zone";
+import { findEngravingValidation } from "../validation.server";
 
 // Home: a status overview of everything the engraving flow depends on, with
 // links to the page that fixes each item.
@@ -27,7 +28,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     fontTwo?: { familyName?: string };
   };
 
+  // "unavailable" until the merchant approves the write_validations permission.
+  let validation: "active" | "inactive" | "unavailable" = "inactive";
+  try {
+    const found = await findEngravingValidation(admin);
+    validation = found?.enabled ? "active" : "inactive";
+  } catch {
+    validation = "unavailable";
+  }
+
   return {
+    validation,
     shopName: (json.data?.shop?.name as string | undefined) ?? "",
     cartTransformActive: (json.data?.cartTransforms?.nodes ?? []).length > 0,
     fontOne: fonts.fontOne?.familyName ?? null,
@@ -63,7 +74,8 @@ function StatusRow({
 }
 
 export default function Index() {
-  const { shopName, cartTransformActive, fontOne, fontTwo } = useLoaderData<typeof loader>();
+  const { shopName, cartTransformActive, fontOne, fontTwo, validation } =
+    useLoaderData<typeof loader>();
   const fontsReady = Boolean(fontOne && fontTwo);
 
   return (
@@ -88,6 +100,19 @@ export default function Index() {
               cartTransformActive
                 ? "The cart transform is active on this store."
                 : "The cart transform is not active yet."
+            }
+            href="/app/setup-cart-transform"
+            action="Setup"
+          />
+          <StatusRow
+            ok={validation === "active"}
+            title="Engraving check at checkout"
+            detail={
+              validation === "active"
+                ? "Checkout rejects engravings that break a product's rules."
+                : validation === "unavailable"
+                  ? "Approve the app's updated permissions to enable it."
+                  : "Not active yet."
             }
             href="/app/setup-cart-transform"
             action="Setup"
