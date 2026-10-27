@@ -16,11 +16,19 @@ const asset = (name: string) =>
     fileURLToPath(new URL(`../../extensions/engraving-preview/assets/${name}`, import.meta.url)),
     "utf8",
   );
-const ASSETS: Record<string, string> = {
-  "engraving-preview-core.js": asset("engraving-preview-core.js"),
-  "engraving-preview.js": asset("engraving-preview.js"),
-  "cart-engraving-images.js": asset("cart-engraving-images.js"),
-};
+// Same order as the Liquid block loads them.
+const BLOCK_SCRIPTS = [
+  "engraving-preview-core.js",
+  "engraving-preview-storage.js",
+  "engraving-preview-render.js",
+  "engraving-preview-overlay.js",
+  "engraving-preview-variants.js",
+  "engraving-preview-cart.js",
+  "engraving-preview.js",
+];
+const ASSETS: Record<string, string> = Object.fromEntries(
+  [...BLOCK_SCRIPTS, "cart-engraving-images.js"].map((name) => [name, asset(name)]),
+);
 
 function productPage(shape: "straight" | "curved") {
   return `<!doctype html><html><body>
@@ -57,8 +65,7 @@ function productPage(shape: "straight" | "curved") {
     <div class="engraving-preview__loading" hidden></div><div class="engraving-preview__error" hidden></div>
   </dialog>
 </engraving-preview>
-<script src="/assets/engraving-preview-core.js"></script>
-<script src="/assets/engraving-preview.js"></script>
+${BLOCK_SCRIPTS.map((name) => `<script src="/assets/${name}"></script>`).join("\n")}
 </body></html>`;
 }
 

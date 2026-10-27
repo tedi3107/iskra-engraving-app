@@ -453,7 +453,13 @@ assign img = product.featured_image
 </engraving-preview>
 
 {{ 'engraving-preview.css' | asset_url | stylesheet_tag }}
+{%- comment -%} Order matters: core and the modules register themselves, engraving-preview.js boots the block. {%- endcomment -%}
 <script src="{{ 'engraving-preview-core.js' | asset_url }}" defer></script>
+<script src="{{ 'engraving-preview-storage.js' | asset_url }}" defer></script>
+<script src="{{ 'engraving-preview-render.js' | asset_url }}" defer></script>
+<script src="{{ 'engraving-preview-overlay.js' | asset_url }}" defer></script>
+<script src="{{ 'engraving-preview-variants.js' | asset_url }}" defer></script>
+<script src="{{ 'engraving-preview-cart.js' | asset_url }}" defer></script>
 <script src="{{ 'engraving-preview.js' | asset_url }}" defer></script>
 
 {% endif %}

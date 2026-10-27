@@ -25,9 +25,21 @@ Data lives in Shopify, not in an app database:
 
 MongoDB stores only OAuth sessions and the upload rate-limit counters.
 
-The storefront's pure logic (geometry, crop, curved layout, money, variant
-matching) is in `assets/engraving-preview-core.js`. The admin's curved preview
-(`app/lib/curved-text.ts`) is checked against it by a parity test.
+The storefront block's JavaScript is split into assets the Liquid loads in
+order. There is no build step, so `shopify app deploy` ships them as they are:
+
+| Asset | Responsibility |
+| --- | --- |
+| `engraving-preview-core.js` | Pure helpers: geometry, crop, curved layout, money, variant matching (unit tested) |
+| `engraving-preview-storage.js` | Draft persistence (localStorage) |
+| `engraving-preview-render.js` | Text silhouette, WebGL lighting, colour sampling, upload snapshot |
+| `engraving-preview-overlay.js` | Overlays on the theme's gallery/zoom photos |
+| `engraving-preview-variants.js` | Variant pills, photo swaps, theme picker sync |
+| `engraving-preview-cart.js` | Preview upload, add to cart, theme form interception |
+| `engraving-preview.js` | Entry point: `<engraving-preview>` element, wiring, dialog, fonts, input |
+
+The admin's curved preview (`app/lib/curved-text.ts`) is checked against the
+core by a parity test.
 
 ## Configuration
 
